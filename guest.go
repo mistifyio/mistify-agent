@@ -65,7 +65,6 @@ func listGuests(r *HttpRequest) *HttpErrorMessage {
 			guests = append(guests, &g)
 			return nil
 		})
-		return nil
 	})
 
 	if err != nil {
