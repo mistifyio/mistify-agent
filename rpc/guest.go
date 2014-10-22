@@ -7,8 +7,9 @@ import (
 type (
 	// GuestRequest is a request to a sub-agent
 	GuestRequest struct {
-		Guest *client.Guest     `json:"guest"`          // Guest
-		Args  map[string]string `json:"args,omitempty"` // Opaque, optional arguments
+		Guest  *client.Guest     `json:"guest"`          // Guest
+		Action string            `json:"action"`         // Action
+		Args   map[string]string `json:"args,omitempty"` // Opaque, optional arguments
 	}
 
 	GuestResponse struct {

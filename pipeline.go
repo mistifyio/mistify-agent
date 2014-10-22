@@ -78,8 +78,9 @@ func (stage *Stage) Run(g *client.Guest) (*client.Guest, error) {
 	}()
 
 	req := rpc.GuestRequest{
-		Guest: g,
-		Args:  stage.Args,
+		Guest:  g,
+		Args:   stage.Args,
+		Action: stage.Action,
 	}
 
 	var resp rpc.GuestResponse
