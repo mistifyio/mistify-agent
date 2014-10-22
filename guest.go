@@ -10,12 +10,15 @@ import (
 )
 
 type (
+
+	// Guest is a "helper struct"
 	Guest struct {
 		context *Context
 		*client.Guest
 	}
 )
 
+// PersistGuest writes guest data to the data store
 func (ctx *Context) PersistGuest(g *client.Guest) error {
 	return ctx.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guests")
@@ -30,6 +33,7 @@ func (ctx *Context) PersistGuest(g *client.Guest) error {
 	})
 }
 
+// DeleteGuest removes a guest from the data store
 func (ctx *Context) DeleteGuest(g *client.Guest) error {
 	err := ctx.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guests")
@@ -205,6 +209,7 @@ func (ctx *Context) switchToRunning(guest *client.Guest) error {
 	return ctx.PersistGuest(guest)
 }
 
+// GuestActionWrapper wraps an HTTP request with a Guest action to avoid duplicated code
 func (c *Chain) GuestActionWrapper(action string) http.HandlerFunc {
 	return c.RequestWrapper(func(r *HttpRequest) *HttpErrorMessage {
 		return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
@@ -218,7 +223,7 @@ func (c *Chain) GuestActionWrapper(action string) http.HandlerFunc {
 	})
 }
 
-func getGuestCpuMetrics(r *HttpRequest) *HttpErrorMessage {
+func getGuestCPUMetrics(r *HttpRequest) *HttpErrorMessage {
 	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
 		metrics, err := r.Context.getCpuMetrics(g)
 		if err != nil {

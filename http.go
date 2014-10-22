@@ -84,7 +84,7 @@ func Run(ctx *Context, address string) error {
 	r.HandleFunc("/guests/{id}/metadata", chain.RequestWrapper(getGuestMetadata)).Methods("GET")
 	r.HandleFunc("/guests/{id}/metadata", chain.RequestWrapper(setGuestMetadata)).Methods("PATCH")
 
-	r.HandleFunc("/guests/{id}/metrics/cpu", chain.RequestWrapper(getGuestCpuMetrics)).Methods("GET")
+	r.HandleFunc("/guests/{id}/metrics/cpu", chain.RequestWrapper(getGuestCPUMetrics)).Methods("GET")
 	r.HandleFunc("/guests/{id}/metrics/disk", chain.RequestWrapper(getGuestDiskMetrics)).Methods("GET")
 	r.HandleFunc("/guests/{id}/metrics/nic", chain.RequestWrapper(getGuestNicMetrics)).Methods("GET")
 

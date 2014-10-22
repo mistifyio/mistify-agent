@@ -12,6 +12,7 @@ import (
 )
 
 type (
+	// Context is the core of the Agent.
 	Context struct {
 		db          *kvite.DB
 		ImageClient *rpc.Client
@@ -25,8 +26,18 @@ type (
 		Metrics map[string]*Stage
 		// TODO: have a metrics method/channel
 	}
+
+	// GuestRunner represents a task runner for a single guest
+	GuestRunner struct {
+		Context *Context
+		ID      string
+		nudge   chan struct{} //this "nudges" the runner to run if it's in select
+		exit    chan struct{} //tells the runner to exit
+		wait    time.Duration //time to wait between runs
+	}
 )
 
+// NewContext creates a new context. In general, there should only be one.
 func NewContext(cfg *config.Config) (*Context, error) {
 	ctx := &Context{
 		Config:   cfg,
@@ -119,9 +130,10 @@ func NewContext(cfg *config.Config) (*Context, error) {
 	return ctx, nil
 }
 
-func (c *Context) GetGuest(id string) (*client.Guest, error) {
+// GetGuest fetches a single guest
+func (ctx *Context) GetGuest(id string) (*client.Guest, error) {
 	var g client.Guest
-	err := c.db.Transaction(func(tx *kvite.Tx) error {
+	err := ctx.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guests")
 		if err != nil {
 			return err
@@ -142,28 +154,21 @@ func (c *Context) GetGuest(id string) (*client.Guest, error) {
 	return &g, nil
 }
 
-type GuestRunner struct {
-	Context *Context
-	Id      string
-	nudge   chan struct{} //this "nudges" the runner to run if it's in select
-	exit    chan struct{} //tells the runner to exit
-	wait    time.Duration //time to wait between runs
-}
-
+// RunAction executes the pipeline associated with the current guest action
 func (runner *GuestRunner) RunAction() {
-	guest, err := runner.Context.GetGuest(runner.Id)
+	guest, err := runner.Context.GetGuest(runner.ID)
 	if err != nil {
-		log.Error("GuestRunner: %s => %s", runner.Id, err)
+		log.Error("GuestRunner: %s => %s", runner.ID, err)
 		return
 	}
 
 	action := guest.Action
-	log.Info("%s: running %s", runner.Id, action)
+	log.Info("%s: running %s", runner.ID, action)
 
 	guest, err = runner.Context.runAsyncAction(guest)
 	if err != nil {
 		// this error should get persisted to the guest somehow?
-		log.Error("GuestRunner: %s, %s", runner.Id, err)
+		log.Error("GuestRunner: %s, %s", runner.ID, err)
 		return
 	}
 	//create and delete are special
@@ -173,15 +178,16 @@ func (runner *GuestRunner) RunAction() {
 		guest.Action = "run"
 		if err := runner.Context.PersistGuest(guest); err != nil {
 			// this error should get persisted to the guest somehow?
-			log.Error("GuestRunner: %s", runner.Id, err)
+			log.Error("GuestRunner: %s", runner.ID, err)
 		}
 	case "delete":
 		if err := runner.Context.DeleteGuest(guest); err != nil {
-			log.Error("GuestRunner: %s", runner.Id, err)
+			log.Error("GuestRunner: %s", runner.ID, err)
 		}
 	}
 }
 
+// Run executes the guest loop
 func (runner *GuestRunner) Run() {
 	for {
 		// TODO: be configurable
@@ -200,13 +206,14 @@ func (runner *GuestRunner) Run() {
 	}
 }
 
+// CreateGuestRunner creates a new runner for a guest
 func (ctx *Context) CreateGuestRunner(guest *client.Guest) (*GuestRunner, error) {
 	ctx.RunnerMutex.Lock()
 	defer ctx.RunnerMutex.Unlock()
 
 	runner := &GuestRunner{
 		Context: ctx,
-		Id:      guest.Id,
+		ID:      guest.Id,
 		// what should the buffering be here?
 		nudge: make(chan struct{}, 4),
 		exit:  make(chan struct{}, 1),
@@ -221,6 +228,8 @@ func (ctx *Context) CreateGuestRunner(guest *client.Guest) (*GuestRunner, error)
 	return runner, nil
 }
 
+// RunGuests creates and runs helpers for each defined guest. In general, this should only be called early in a process
+// There is no locking provided.
 func (ctx *Context) RunGuests() error {
 	return ctx.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guests")
