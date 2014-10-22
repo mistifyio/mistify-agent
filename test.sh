@@ -10,7 +10,7 @@ pushd examples/test-rpc-service
 go run main.go &
 popd
 
-pushd cmd/agent
+pushd cmd/mistify-agent
 go run main.go &
 popd
 
