@@ -34,6 +34,7 @@ type (
 	VolumeRequest struct {
 		Id   string `json:"id"`   // Volume ID
 		Size uint64 `json:"size"` //  Size in MB
+		Dest string `json:"dest"` // Destination for snapshots, etc
 	}
 
 	// VolumeResponse is a volume response from the Storage sub-agent
