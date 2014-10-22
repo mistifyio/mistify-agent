@@ -23,4 +23,4 @@ Log run script
 exec 2>&1
 mkdir -p /var/log/test-rpc-service
 exec svlogd /var/log/test-rpc-service
-``
+```
