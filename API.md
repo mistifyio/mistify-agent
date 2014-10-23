@@ -113,3 +113,68 @@ Sample Guest request body:
 |RPC|This calls the _shutdown_ action which has both a synchronous and asynchronous pipeline|
 |_RPC Input_|**GuestRequest**|
 |_RPC Output_|**GuestResponse**|
+
+
+|||
+|---|---|
+|REST | POST /guests/{id}/reboot|
+|Description | perform reboot of the guest.|
+|Output|**Guest**|
+|RPC|This calls the reboot action which has both a synchronous and asynchronous pipeline|
+|_RPC Input_|**GuestRequest**|
+|_RPC Output_|**GuestResponse**|
+
+
+
+|||
+|---|---|
+|REST | POST /guests/{id}/restart|
+|Description | perform restart of the guest. This is a _hard_ reset.|
+|Output|**Guest**|
+|RPC|This calls the restart action which has both a synchronous and asynchronous pipeline|
+|_RPC Input_|**GuestRequest**|
+|_RPC Output_|**GuestResponse**|
+
+
+
+|||
+|---|---|
+|REST | POST /guests/{id}/poweroff|
+|Description | perform poweroff of the guest.|
+|Output|**Guest**|
+|RPC|This calls the poweroff action which has both a synchronous and asynchronous pipeline|
+|_RPC Input_|**GuestRequest**|
+|_RPC Output_|**GuestResponse**|
+
+
+
+|||
+|---|---|
+|REST | POST /guests/{id}/start|
+|Description | perform start of the guest if it is currently off, shutdown, or suspended|
+|Output|**Guest**|
+|RPC|This calls the start action which has both a synchronous and asynchronous pipeline|
+|_RPC Input_|**GuestRequest**|
+|_RPC Output_|**GuestResponse**|
+
+
+
+|||
+|---|---|
+|REST | POST /guests/{id}/suspend|
+|Description | perform suspend of the guest.|
+|Output|**Guest**|
+|RPC|This calls the suspend action which has both a synchronous and asynchronous pipeline|
+|_RPC Input_|**GuestRequest**|
+|_RPC Output_|**GuestResponse**|
+
+
+
+|||
+|---|---|
+|REST | DELETE /guests/{id}|
+|Description | perform delete of the guest. After succesfully deleting the guest, the agent will remove it from its data store.|
+|Output|**Guest**|
+|RPC|This calls the delete action which has both a synchronous and asynchronous pipeline|
+|_RPC Input_|**GuestRequest**|
+|_RPC Output_|**GuestResponse**|
