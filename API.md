@@ -20,6 +20,8 @@ Rather than recreate the data structures here, we will reference them as declare
 
 # API calls #
 
-| REST | GET /metadata |
-|Description | Hypervisor level metadata |
+  |
+-|-
+ REST | GET /metadata
+Description | Hypervisor level metadata
 
