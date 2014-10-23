@@ -2,6 +2,8 @@ package rpc
 
 type (
 
+	// Image, volume, and snapshot should probably move to client package
+
 	// Image represents a ZFS ZVOL snapshot used for creating VM disks
 	Image struct {
 		Id       string `json:"id"`       // Unique ID
@@ -16,6 +18,12 @@ type (
 		Id     string `json:"id"`     // Unique ID
 		Size   uint64 `json:"size"`   // Size in MB
 		Device string `json:"device"` // Device in /dev to use
+	}
+
+	// Volume represents a ZFS Snapshot
+	Snapshot struct {
+		Id   string `json:"id"`   // Unique ID
+		Size uint64 `json:"size"` // Size in MB
 	}
 
 	// ImageRequest is an image request to the Storage sub-agent
@@ -34,11 +42,20 @@ type (
 	VolumeRequest struct {
 		Id   string `json:"id"`   // Volume ID
 		Size uint64 `json:"size"` //  Size in MB
-		Dest string `json:"dest"` // Destination for snapshots, etc
 	}
 
 	// VolumeResponse is a volume response from the Storage sub-agent
 	VolumeResponse struct {
 		Volumes []*Volume `json:"volumes"` //Volume slice for gets and lists. An empty slice is generally used for "not found"
+	}
+
+	// SnapshotRequest is a snapshot request for the Storage sub-agent
+	SnapshotRequest struct {
+		Id   string `json:"id"`   // Volume ID
+		Dest string `json:"dest"` // Destination for clones, creates, etc
+	}
+
+	SnapshotResponse struct {
+		Snapshots []*Snapshot `json:"snapshots"` // Snapshot slice for gets and lists. An empty slice is generally used for "not found"
 	}
 )
