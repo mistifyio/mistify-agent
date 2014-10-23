@@ -20,8 +20,18 @@ Rather than recreate the data structures here, we will reference them as declare
 
 # API calls #
 
--|-
--|-
- REST | GET /metadata
-Description | Hypervisor level metadata
+|||
+|---|---|
+|REST | GET /metadata|
+|Description | Hypervisor level metadata|
+|Input|none|
+|Output|hash of key/value pairs|
+
+
+|||
+|---|---|
+|REST | PATCH /metadata|
+|Description | Hypervisor level metadata|
+|Input|key/value pairs (both must be strings). Values to be removed can be set to null|
+|Output|hash of key/value pairs|
 
