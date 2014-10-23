@@ -11,7 +11,7 @@ go run main.go &
 popd
 
 pushd cmd/mistify-agent
-go run main.go &
+go run main.go --config-file ../../examples/test-rpc-service/agent.json &
 popd
 
 
