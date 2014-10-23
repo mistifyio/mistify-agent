@@ -17,8 +17,8 @@ Rather than recreate the data structures here, we will reference them as declare
 - **Volume** - guest disk volume - http://godoc.org/github.com/mistifyio/mistify-agent/rpc#Volume
 - **VolumeRequest** - RPC request - http://godoc.org/github.com/mistifyio/mistify-agent/rpc#VolumeRequest
 - **VolumeResponse** - RPC response - http://godoc.org/github.com/mistifyio/mistify-agent/rpc#VolumeResponse
--**GuestMetricsRequest** - RPC request - http://godoc.org/github.com/mistifyio/mistify-agent/rpc#GuestMetricsRequest
--**GuestMetricsResponse** - RPC response - http://godoc.org/github.com/mistifyio/mistify-agent/rpc#GuestMetricsResponse
+- **GuestMetricsRequest** - RPC request - http://godoc.org/github.com/mistifyio/mistify-agent/rpc#GuestMetricsRequest
+- **GuestMetricsResponse** - RPC response - http://godoc.org/github.com/mistifyio/mistify-agent/rpc#GuestMetricsResponse
 
 # API calls #
 
