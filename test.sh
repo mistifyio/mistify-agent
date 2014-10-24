@@ -11,6 +11,8 @@ go get
 go clean
 go build
 ./test-rpc-service &
+RPC_PID=$!
+trap "kill $RPC_PID" SIGINT SIGTERM EXIT
 popd
 
 pushd cmd/mistify-agent
@@ -18,6 +20,8 @@ go get
 go clean
 go build
 ./mistify-agent --config-file ../../examples/test-rpc-service/agent.json &
+AGENT_PID=$!
+trap "kill $RPC_PID; kill $AGENT_PID" SIGINT SIGTERM EXIT
 popd
 
 
@@ -25,13 +29,6 @@ sleep 5
 
 HOST=${1:-127.0.0.1}
 PORT=${2:-8080}
-
-#rpc (){
-#        METHOD=$1
-#        shift
-#        PAYLOAD=$(printf '{ "method": "%s", "id": %d, "params": [ %d ] }' $METHOD $RANDOM "$@"
-#        curl --fail -sv -X POST -H 'Content-Type: application/json' http://$HOST:$PORT/_mistify_RPC_ --data-binary "$@" | jq .
-#}
 
 http (){
         METHOD=$1
@@ -53,4 +50,10 @@ for m in cpu disk nic; do
     http GET guests/$ID/metrics/$m
 done
 
+kill $AGENT_PID
+sleep 1
+kill $RPC_PID
 
+trap - SIGINT SIGTERM EXIT
+
+exit 0
