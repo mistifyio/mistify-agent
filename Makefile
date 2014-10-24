@@ -1,5 +1,6 @@
 cmd/mistify-agent/mistify-agent: cmd/mistify-agent/main.go
 	cd cmd/mistify-agent
+	go get
 	go build
 
 
