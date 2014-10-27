@@ -26,9 +26,9 @@ if [ ! -x /usr/local/bin/jq ]; then
 fi
 
 cat <<EOF > /etc/profile.d/go.sh
-GOPATH=\$HOME/go
+GOPATH=\\$HOME/go
 export GOPATH
-PATH=\$GOPATH/bin:\$PATH:/usr/local/go/bin
+PATH=\\$GOPATH/bin:\\$PATH:/usr/local/go/bin
 export PATH
 EOF
 
