@@ -3,8 +3,6 @@ set -e
 set -o pipefail
 set -x
 
-trap "kill 0" SIGINT SIGTERM EXIT
-
 
 pushd examples/test-rpc-service
 go get
