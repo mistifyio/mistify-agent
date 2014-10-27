@@ -27,3 +27,4 @@ _testmain.go
 
 cmd/mistify-agent/mistify-agent
 cmd/mistify-agent/agent.json
+examples/test-rpc-service/test-rpc-service
