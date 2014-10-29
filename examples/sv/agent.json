@@ -1,0 +1,79 @@
+{
+    "actions": {
+        "restart": {
+            "sync": [
+                {
+                    "method": "Test.Restart",
+                    "service": "test"
+                }
+            ]
+        },
+        "poweroff":{
+            "sync": [
+                {
+                    "method": "Test.Poweroff",
+                    "service": "test"
+                }
+            ]
+        },
+        "delete":{
+            "async": [
+                {
+                    "method": "Test.Delete",
+                    "service": "test"
+                }
+            ]
+        },
+        "create": {
+            "async": [
+                {
+                    "method": "Test.Create",
+                    "service": "test"
+                }
+            ]
+        },
+        "run": {
+            "async": [
+                {
+                    "method": "Test.Run",
+                    "service": "test"
+                }
+            ]
+        },
+        "reboot": {
+            "sync": [
+                {
+                    "method": "Test.Reboot",
+                    "service": "test"
+                }
+            ]
+        },
+        "shutdown": {
+            "sync": [
+                {
+                    "method": "Test.Shutdown",
+                    "service": "test"
+                }
+            ]
+        }
+    },
+    "metrics": {
+        "cpu": {
+            "method": "Test.CpuMetrics",
+            "service": "test"
+        },
+        "nic": {
+            "method": "Test.NicMetrics",
+            "service": "test"
+        },
+        "disk": {
+            "method": "Test.DiskMetrics",
+            "service": "test"
+        }
+    },
+    "services": {
+        "test": {
+            "port": 9999
+        }
+    }
+}
