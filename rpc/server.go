@@ -2,16 +2,16 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/bakins/net-http-recover"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	"github.com/gorilla/rpc"
-	"github.com/gorilla/rpc/json"
-	"github.com/justinas/alice"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"time"
+
+	"github.com/bakins/net-http-recover"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/gorilla/rpc"
+	"github.com/justinas/alice"
 )
 
 type (
@@ -43,12 +43,12 @@ func NewServer(port int) (*Server, error) {
 		},
 		Router: mux.NewRouter(),
 	}
-	s.RpcServer.RegisterCodec(json.NewCodec(), "application/json")
+	s.RpcServer.RegisterCodec(NewCodec(), "application/json")
 	s.HttpServer.Handler = s.Router
 
 	s.Chain = alice.New(
 		func(h http.Handler) http.Handler {
-			return handlers.CombinedLoggingHandler(os.Stdout, h)
+			return NewLogger(os.Stdout, h)
 		},
 		handlers.CompressHandler,
 		func(h http.Handler) http.Handler {
