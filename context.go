@@ -183,6 +183,7 @@ func (runner *GuestRunner) RunAction() {
 			// this error should get persisted to the guest somehow?
 			log.Error("GuestRunner: %s", runner.ID, err)
 		}
+		runner.Nudge()
 	case "delete":
 		if err := runner.Context.DeleteGuest(guest); err != nil {
 			log.Error("GuestRunner: %s", runner.ID, err)
@@ -250,7 +251,6 @@ func (ctx *Context) RunGuests() error {
 				// should this be fatal if it just fails on one guest??
 				return err
 			}
-			// TODO: we need to keep track of these...
 			_, err := ctx.CreateGuestRunner(&guest)
 			if err != nil {
 				return err
@@ -262,4 +262,18 @@ func (ctx *Context) RunGuests() error {
 
 func (runner *GuestRunner) Exit() {
 	runner.exit <- struct{}{}
+}
+
+func (runner *GuestRunner) Nudge() {
+	runner.nudge <- struct{}{}
+}
+
+func (ctx *Context) NudgeGuest(id string) {
+	ctx.RunnerMutex.Lock()
+	defer ctx.RunnerMutex.Unlock()
+
+	runner := ctx.Runners[id]
+	if runner != nil {
+		runner.Nudge()
+	}
 }
