@@ -1,12 +1,13 @@
 package agent
 
 import (
-	"code.google.com/p/go-uuid/uuid"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
-	"net/http"
 )
 
 type (
@@ -92,7 +93,12 @@ func (ctx *Context) runAsyncAction(guest *client.Guest) (*client.Guest, error) {
 	if !ok {
 		return nil, fmt.Errorf("unknown action: %s", guest.Action)
 	}
-	return action.Async.Run(guest)
+	g, err := action.Async.Run(guest)
+	if err != nil {
+		return nil, err
+	}
+	ctx.NudgeGuest(g.Id)
+	return g, nil
 }
 
 func createGuest(r *HttpRequest) *HttpErrorMessage {
@@ -121,10 +127,12 @@ func createGuest(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 500)
 	}
 
-	_, err = r.Context.CreateGuestRunner(guest)
+	runner, err := r.Context.CreateGuestRunner(guest)
 	if err != nil {
 		return r.NewError(err, 500)
 	}
+
+	runner.Nudge()
 	return r.JSON(202, guest)
 }
 
