@@ -84,7 +84,13 @@ func (ctx *Context) runSyncAction(guest *client.Guest) (*client.Guest, error) {
 	if !ok {
 		return nil, fmt.Errorf("unknown action: %s", guest.Action)
 	}
-	return action.Sync.Run(guest)
+
+	g, err := action.Sync.Run(guest)
+	if err != nil {
+		return nil, err
+	}
+	ctx.NudgeGuest(g.Id)
+	return g, nil
 }
 
 // XXX: all the sync/async initialization and running seems redundant
@@ -93,12 +99,8 @@ func (ctx *Context) runAsyncAction(guest *client.Guest) (*client.Guest, error) {
 	if !ok {
 		return nil, fmt.Errorf("unknown action: %s", guest.Action)
 	}
-	g, err := action.Async.Run(guest)
-	if err != nil {
-		return nil, err
-	}
-	ctx.NudgeGuest(g.Id)
-	return g, nil
+	return action.Async.Run(guest)
+
 }
 
 func createGuest(r *HttpRequest) *HttpErrorMessage {
