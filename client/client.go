@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"time"
 )
 
 type (
@@ -33,9 +34,11 @@ type (
 // DefaultConfig returns a default configuration for the client
 func DefaultConfig() *Config {
 	return &Config{
-		Address:    "127.0.0.1:8080",
-		Scheme:     "http",
-		HttpClient: http.DefaultClient,
+		Address: "127.0.0.1:8080",
+		Scheme:  "http",
+		HttpClient: &http.Client{
+			Timeout: time.Duration(5 * time.Second),
+		},
 	}
 }
 
