@@ -2,13 +2,14 @@ package agent
 
 import (
 	"encoding/json"
+	"sync"
+	"time"
+
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/config"
 	"github.com/mistifyio/mistify-agent/log"
 	"github.com/mistifyio/mistify-agent/rpc"
-	"sync"
-	"time"
 )
 
 type (
@@ -156,6 +157,8 @@ func (ctx *Context) GetGuest(id string) (*client.Guest, error) {
 
 // RunAction executes the pipeline associated with the current guest action
 func (runner *GuestRunner) RunAction() {
+	log.Error("GuestRunner: %s start", runner.ID)
+
 	guest, err := runner.Context.GetGuest(runner.ID)
 	if err != nil {
 		log.Error("GuestRunner: %s => %s", runner.ID, err)
@@ -184,17 +187,22 @@ func (runner *GuestRunner) RunAction() {
 		if err := runner.Context.DeleteGuest(guest); err != nil {
 			log.Error("GuestRunner: %s", runner.ID, err)
 		}
+		runner.Exit()
 	}
 }
 
 // Run executes the guest loop
 func (runner *GuestRunner) Run() {
+LOOP:
 	for {
+		log.Info("run loop %s", runner.ID)
+
 		// TODO: be configurable
 		select {
 
 		case <-runner.exit:
-			break
+			log.Info("run loop time to die %s", runner.ID)
+			break LOOP
 
 			// TODO: have a way for stages/pipelines to set this and us set it back??
 		case <-time.After(runner.wait):
@@ -222,7 +230,7 @@ func (ctx *Context) CreateGuestRunner(guest *client.Guest) (*GuestRunner, error)
 	}
 
 	ctx.Runners[guest.Id] = runner
-	log.Info("starting %s", guest.Id)
+	log.Info("starting %s, %s", guest.Id, guest.Action)
 	go runner.Run()
 
 	return runner, nil
@@ -250,4 +258,8 @@ func (ctx *Context) RunGuests() error {
 			return nil
 		})
 	})
+}
+
+func (runner *GuestRunner) Exit() {
+	runner.exit <- struct{}{}
 }

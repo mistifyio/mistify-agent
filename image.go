@@ -2,6 +2,7 @@ package agent
 
 import (
 	"encoding/json"
+
 	"github.com/mistifyio/mistify-agent/rpc"
 )
 
@@ -45,7 +46,7 @@ func fetchImage(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 400)
 	}
 	response := rpc.ImageResponse{}
-	err = r.Context.ImageClient.Do("Request.ListImages", &req, &response)
+	err = r.Context.ImageClient.Do("ImageStore.RequestImage", &req, &response)
 	if err != nil {
 		return r.NewError(err, 500)
 	}

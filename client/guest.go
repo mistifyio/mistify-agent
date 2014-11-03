@@ -19,7 +19,7 @@ type (
 		Name    string `json:"name,omitempty"`
 		Network string `json:"network"`
 		Model   string `json:"model"`
-		Mac     string `json:"mac"`
+		Mac     string `json:"mac,omitempty"`
 		Address string `json:"address"`
 		Netmask string `json:"netmask"`
 		Gateway string `json:"gateway"`
@@ -36,15 +36,15 @@ type (
 	}
 
 	GuestDiskMetrics struct {
-		Disk       string `json:"disk"`
-		ReadOps    int64  `json:"read_ops"`
-		ReadBytes  int64  `json:"read_bytes"`
-		ReadTime   int64  `json:"read_time"`
-		WriteOps   int64  `json:"write_ops"`
-		WriteBytes int64  `json:"write_bytes"`
-		WriteTime  int64  `json:"write_time"`
-		FlushOps   int64  `json:"flush_ops"`
-		FlushTime  int64  `json:"flush_time"`
+		Disk       string  `json:"disk"`
+		ReadOps    int64   `json:"read_ops"`
+		ReadBytes  int64   `json:"read_bytes"`
+		ReadTime   float64 `json:"read_time"`
+		WriteOps   int64   `json:"write_ops"`
+		WriteBytes int64   `json:"write_bytes"`
+		WriteTime  float64 `json:"write_time"`
+		FlushOps   int64   `json:"flush_ops"`
+		FlushTime  float64 `json:"flush_time"`
 	}
 
 	GuestCpuMetrics struct {
