@@ -7,6 +7,7 @@ import (
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
 	"net/http"
+	"strings"
 )
 
 type (
@@ -157,6 +158,48 @@ func withGuest(r *HttpRequest, fn func(g *client.Guest) *HttpErrorMessage) *Http
 	return fn(&g)
 }
 
+func withGuestFromAddr(r *HttpRequest, fn func(g *client.Guest) *HttpErrorMessage) *HttpErrorMessage {
+	var guest client.Guest
+	remoteAddr := strings.Split(r.Request.RemoteAddr, ":")[0]
+
+	err := r.Context.db.Transaction(func(tx *kvite.Tx) error {
+		bucket, err := tx.Bucket("guests")
+		if err != nil {
+			return err
+		}
+
+		guests, err := bucket.GetAll()
+		if err != nil {
+			return err
+		}
+
+		for _, data := range guests {
+			err = json.Unmarshal(data, &guest)
+			if err != nil {
+				return err
+			}
+
+			for _, nic := range guest.Nics {
+				if nic.Address == remoteAddr {
+					return nil
+				}
+			}
+		}
+
+		return NotFound
+	})
+
+	if err != nil {
+		code := 500
+		if err == NotFound {
+			code = 404
+		}
+		return r.NewError(err, code)
+	}
+
+	return fn(&guest)
+}
+
 func getGuest(r *HttpRequest) *HttpErrorMessage {
 	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
 		return r.JSON(200, g)
@@ -176,6 +219,12 @@ func deleteGuest(r *HttpRequest) *HttpErrorMessage {
 
 func getGuestMetadata(r *HttpRequest) *HttpErrorMessage {
 	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
+		return r.JSON(200, g.Metadata)
+	})
+}
+
+func getGuestMetadataByAddr(r *HttpRequest) *HttpErrorMessage {
+	return withGuestFromAddr(r, func(g *client.Guest) *HttpErrorMessage {
 		return r.JSON(200, g.Metadata)
 	})
 }
