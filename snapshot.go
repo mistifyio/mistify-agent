@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/rpc"
 )
 
@@ -64,7 +65,6 @@ func createSnapshot(r *HttpRequest) *HttpErrorMessage {
 	if request.Dest == "" {
 		request.Dest = fmt.Sprintf("snap-%d", time.Now().Unix())
 	}
-	fmt.Println(request)
 	err = r.Context.ImageClient.Do("ImageStore.CreateSnapshot", &request, &response)
 	if err != nil {
 		return getHttpError(r, err)
@@ -86,18 +86,36 @@ func deleteSnapshot(r *HttpRequest) *HttpErrorMessage {
 }
 
 func rollbackSnapshot(r *HttpRequest) *HttpErrorMessage {
-	response := rpc.SnapshotResponse{}
-	var request rpc.SnapshotRequest
-	err := json.NewDecoder(r.Request.Body).Decode(&request)
-	if err != nil {
-		return r.NewError(err, 400)
-	}
-	request.Id = getEntityId(r)
-	err = r.Context.ImageClient.Do("ImageStore.RollbackSnapshot", &request, &response)
-	if err != nil {
-		return getHttpError(r, err)
-	}
-	return r.JSON(200, response.Snapshots)
+	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
+		// Shutdown
+		g.Action = "shutdown"
+		g, err := r.Context.runSyncAction(g)
+		if err != nil {
+			return r.NewError(err, 500)
+		}
+
+		// Rollback
+		response := rpc.SnapshotResponse{}
+		var request rpc.SnapshotRequest
+		err = json.NewDecoder(r.Request.Body).Decode(&request)
+		if err != nil {
+			return r.NewError(err, 400)
+		}
+		request.Id = getEntityId(r)
+		err = r.Context.ImageClient.Do("ImageStore.RollbackSnapshot", &request, &response)
+		if err != nil {
+			return getHttpError(r, err)
+		}
+
+		// Startup
+		g.Action = "shutdown"
+		g, err = r.Context.runSyncAction(g)
+		if err != nil {
+			return r.NewError(err, 500)
+		}
+
+		return r.JSON(200, response.Snapshots)
+	})
 }
 
 func downloadSnapshot(r *HttpRequest) *HttpErrorMessage {
