@@ -97,6 +97,8 @@ func Run(ctx *Context, address string) error {
 	r.HandleFunc("/images/{id}", chain.RequestWrapper(getImage)).Methods("GET")
 	r.HandleFunc("/images/{id}", chain.RequestWrapper(deleteImage)).Methods("DELETE")
 
+	r.HandleFunc("/guest/metadata", chain.RequestWrapper(getGuestMetadataByAddr)).Methods("GET")
+
 	/*
 		guest := guests.PathPrefix("/{id}").Subrouter()
 		guest.HandleFunc("/vnc", RequestWrapper(ctx, vncGuest))
