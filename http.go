@@ -42,7 +42,7 @@ type (
 )
 
 var (
-	NotFound = errors.New("Not Found")
+	NotFound = errors.New("not found")
 )
 
 func AttachProfiler(router *mux.Router) {
@@ -92,6 +92,14 @@ func Run(ctx *Context, address string) error {
 		r.HandleFunc(fmt.Sprintf("/guests/{id}/%s", action), chain.GuestActionWrapper(action)).Methods("POST")
 	}
 
+	for _, prefix := range []string{"/guests/{id}", "/guests/{id}/disks/{disk}"} {
+		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.RequestWrapper(listSnapshots)).Methods("GET")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.RequestWrapper(createSnapshot)).Methods("POST")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.RequestWrapper(getSnapshot)).Methods("GET")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.RequestWrapper(deleteSnapshot)).Methods("DELETE")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/rollback", prefix), chain.RequestWrapper(rollbackSnapshot)).Methods("POST")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/download", prefix), chain.RequestWrapper(downloadSnapshot)).Methods("GET")
+	}
 	r.HandleFunc("/images", chain.RequestWrapper(listImages)).Methods("GET")
 	r.HandleFunc("/images", chain.RequestWrapper(fetchImage)).Methods("POST")
 	r.HandleFunc("/images/{id}", chain.RequestWrapper(getImage)).Methods("GET")
