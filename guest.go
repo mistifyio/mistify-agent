@@ -3,6 +3,7 @@ package agent
 import (
 	"code.google.com/p/go-uuid/uuid"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
@@ -168,12 +169,9 @@ func withGuestFromAddr(r *HttpRequest, fn func(g *client.Guest) *HttpErrorMessag
 			return err
 		}
 
-		guests, err := bucket.GetAll()
-		if err != nil {
-			return err
-		}
+		found := errors.New("found")
 
-		for _, data := range guests {
+		err = bucket.ForEach(func(key string, data []byte) error {
 			err = json.Unmarshal(data, &guest)
 			if err != nil {
 				return err
@@ -181,12 +179,20 @@ func withGuestFromAddr(r *HttpRequest, fn func(g *client.Guest) *HttpErrorMessag
 
 			for _, nic := range guest.Nics {
 				if nic.Address == remoteAddr {
-					return nil
+					return found
 				}
 			}
-		}
 
-		return NotFound
+			return nil
+		})
+
+		if err == found {
+			return nil
+		} else if err != nil {
+			return err
+		} else {
+			return NotFound
+		}
 	})
 
 	if err != nil {
