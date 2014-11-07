@@ -35,7 +35,7 @@ func (s *Simple) DoStuff(r *http.Request, request *rpc.GuestRequest, response *r
 
 func main() {
 
-	var port int
+	var port uint
 	var percent uint
 	var h bool
 

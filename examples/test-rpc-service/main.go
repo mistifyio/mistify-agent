@@ -116,7 +116,7 @@ func (t *Test) NicMetrics(r *http.Request, request *rpc.GuestMetricsRequest, res
 
 func main() {
 
-	var port int
+	var port uint
 	var h bool
 
 	flag.BoolVar(&h, []string{"h", "#help", "-help"}, false, "display the help")

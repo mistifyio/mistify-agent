@@ -82,7 +82,7 @@ func (w *Webhook) Post(r *http.Request, request *rpc.GuestRequest, response *rpc
 
 func main() {
 
-	var port int
+	var port uint
 	var h bool
 	var endpoint string
 
