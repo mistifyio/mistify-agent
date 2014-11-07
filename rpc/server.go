@@ -33,7 +33,7 @@ func attachProfiler(router *mux.Router) {
 
 // NewServer creates an JSON-RPC HTTP server bound to 127.0.0.1.  This answers RPC requests on the Mistify RPC Path.
 // This server logs to STDOUT and also presents pprof on /debug/pprof/
-func NewServer(port int) (*Server, error) {
+func NewServer(port uint) (*Server, error) {
 	s := &Server{
 		RpcServer: rpc.NewServer(),
 		HttpServer: &http.Server{
