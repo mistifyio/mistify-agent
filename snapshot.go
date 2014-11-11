@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -36,7 +37,8 @@ func getEntityId(r *HttpRequest) string {
 func listSnapshots(r *HttpRequest) *HttpErrorMessage {
 	response := rpc.SnapshotResponse{}
 	request := rpc.SnapshotRequest{Id: getEntityId(r)}
-	err := r.Context.ImageClient.Do("ImageStore.ListSnapshots", &request, &response)
+	handler := r.Context.ImageActions["listSnapshots"]
+	err := handler.Service.Client.Do(handler.Method, &request, &response)
 	if err != nil {
 		return getHttpError(r, err)
 	}
@@ -46,7 +48,8 @@ func listSnapshots(r *HttpRequest) *HttpErrorMessage {
 func getSnapshot(r *HttpRequest) *HttpErrorMessage {
 	response := rpc.SnapshotResponse{}
 	request := rpc.SnapshotRequest{Id: getEntityId(r)}
-	err := r.Context.ImageClient.Do("ImageStore.GetSnapshot", &request, &response)
+	handler := r.Context.ImageActions["getSnapshot"]
+	err := handler.Service.Client.Do(handler.Method, &request, &response)
 	if err != nil {
 		return getHttpError(r, err)
 	}
@@ -65,7 +68,8 @@ func createSnapshot(r *HttpRequest) *HttpErrorMessage {
 	if request.Dest == "" {
 		request.Dest = fmt.Sprintf("snap-%d", time.Now().Unix())
 	}
-	err = r.Context.ImageClient.Do("ImageStore.CreateSnapshot", &request, &response)
+	handler := r.Context.ImageActions["createSnapshot"]
+	err = handler.Service.Client.Do(handler.Method, &request, &response)
 	if err != nil {
 		return getHttpError(r, err)
 	}
@@ -78,7 +82,8 @@ func deleteSnapshot(r *HttpRequest) *HttpErrorMessage {
 		Id:        getEntityId(r),
 		Recursive: r.Parameter("disk") == "",
 	}
-	err := r.Context.ImageClient.Do("ImageStore.DeleteSnapshot", &request, &response)
+	handler := r.Context.ImageActions["deleteSnapshot"]
+	err := handler.Service.Client.Do(handler.Method, &request, &response)
 	if err != nil {
 		return getHttpError(r, err)
 	}
@@ -102,7 +107,8 @@ func rollbackSnapshot(r *HttpRequest) *HttpErrorMessage {
 			return r.NewError(err, 400)
 		}
 		request.Id = getEntityId(r)
-		err = r.Context.ImageClient.Do("ImageStore.RollbackSnapshot", &request, &response)
+		handler := r.Context.ImageActions["rollbackSnapshot"]
+		err = handler.Service.Client.Do(handler.Method, &request, &response)
 		if err != nil {
 			return getHttpError(r, err)
 		}
@@ -127,7 +133,15 @@ func downloadSnapshot(r *HttpRequest) *HttpErrorMessage {
 	if err != nil {
 		return r.NewError(err, 400)
 	}
-	resp, err := http.Post("http://127.0.0.1:16000/snapshots/download", "application/json", bytes.NewReader(data))
+
+	handler := r.Context.ImageActions["downloadSnapshot"]
+	downloadUrl, err := url.Parse(handler.Service.Client.Url)
+	if err != nil {
+		return r.NewError(err, 500)
+	}
+	downloadUrl.Path = handler.Method
+
+	resp, err := http.Post(downloadUrl.String(), "application/json", bytes.NewReader(data))
 	if err != nil {
 		return r.NewError(err, 500)
 	}

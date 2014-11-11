@@ -71,9 +71,54 @@
             "service": "test"
         }
     },
+    "imageActions":{
+        "listImages": {
+            "method": "ImageStore.ListImages",
+            "service": "imageService"
+        },
+        "getImage": {
+            "method": "ImageStore.Get",
+            "service": "imageService"
+        },
+        "deleteImage": {
+            "method": "ImageStore.DeleteImage",
+            "service": "imageService"
+        },
+        "fetchImage": {
+            "method": "ImageStore.RequestImage",
+            "service": "imageService"
+        },
+        "listSnapshots": {
+            "method": "ImageStore.ListSnapshots",
+            "service": "imageService"
+        },
+        "getSnapshot": {
+            "method": "ImageStore.GetSnapshot",
+            "service": "imageService"
+        },
+        "createSnapshot": {
+            "method": "ImageStore.CreateSnapshot",
+            "service": "imageService"
+        },
+        "deleteSnapshot": {
+            "method": "ImageStore.DeleteSnapshot",
+            "service": "imageService"
+        },
+        "rollbackSnapshot": {
+            "method": "ImageStore.DeleteSnapshot",
+            "service": "imageService"
+        },
+        "downloadSnapshot": {
+            "method": "snapshots/download",
+            "service": "imageService"
+        }
+    },
     "services": {
         "test": {
             "port": 9999
+        },
+        "imageService": {
+            "port": 16000
         }
     }
 }

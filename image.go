@@ -8,7 +8,8 @@ import (
 
 func listImages(r *HttpRequest) *HttpErrorMessage {
 	response := rpc.ImageResponse{}
-	err := r.Context.ImageClient.Do("ImageStore.ListImages", &rpc.ImageRequest{}, &response)
+	handler := r.Context.ImageActions["listImages"]
+	err := handler.Service.Client.Do(handler.Method, &rpc.ImageRequest{}, &response)
 	if err != nil {
 		return r.NewError(err, 500)
 	}
@@ -17,7 +18,8 @@ func listImages(r *HttpRequest) *HttpErrorMessage {
 
 func getImage(r *HttpRequest) *HttpErrorMessage {
 	response := rpc.ImageResponse{}
-	err := r.Context.ImageClient.Do("ImageStore.Get", &rpc.ImageRequest{Id: r.Parameter("id")}, &response)
+	handler := r.Context.ImageActions["getImage"]
+	err := handler.Service.Client.Do(handler.Method, &rpc.ImageRequest{Id: r.Parameter("id")}, &response)
 	if err != nil {
 		return r.NewError(err, 500)
 	}
@@ -31,7 +33,8 @@ func getImage(r *HttpRequest) *HttpErrorMessage {
 
 func deleteImage(r *HttpRequest) *HttpErrorMessage {
 	response := rpc.ImageResponse{}
-	err := r.Context.ImageClient.Do("ImageStore.DeleteImage", &rpc.ImageRequest{Id: r.Parameter("id")}, &response)
+	handler := r.Context.ImageActions["deleteImage"]
+	err := handler.Service.Client.Do(handler.Method, &rpc.ImageRequest{Id: r.Parameter("id")}, &response)
 	// how to check for not found??
 	if err != nil {
 		return r.NewError(err, 500)
@@ -46,7 +49,8 @@ func fetchImage(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 400)
 	}
 	response := rpc.ImageResponse{}
-	err = r.Context.ImageClient.Do("ImageStore.RequestImage", &req, &response)
+	handler := r.Context.ImageActions["fetchImage"]
+	err = handler.Service.Client.Do(handler.Method, &req, &response)
 	if err != nil {
 		return r.NewError(err, 500)
 	}

@@ -9,23 +9,22 @@ import (
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/config"
 	"github.com/mistifyio/mistify-agent/log"
-	"github.com/mistifyio/mistify-agent/rpc"
 )
 
 type (
 	// Context is the core of the Agent.
 	Context struct {
-		db          *kvite.DB
-		ImageClient *rpc.Client
-		Config      *config.Config
-		Actions     map[string]*Action
-		Services    map[string]*Service
+		db       *kvite.DB
+		Config   *config.Config
+		Actions  map[string]*Action
+		Services map[string]*Service
 
 		Runners     map[string]*GuestRunner
 		RunnerMutex sync.Mutex
 
-		Metrics map[string]*Stage
 		// TODO: have a metrics method/channel
+		Metrics      map[string]*Stage
+		ImageActions map[string]*Stage
 	}
 
 	// GuestRunner represents a task runner for a single guest
@@ -41,10 +40,11 @@ type (
 // NewContext creates a new context. In general, there should only be one.
 func NewContext(cfg *config.Config) (*Context, error) {
 	ctx := &Context{
-		Config:   cfg,
-		Actions:  make(map[string]*Action),
-		Services: make(map[string]*Service),
-		Metrics:  make(map[string]*Stage),
+		Config:       cfg,
+		Actions:      make(map[string]*Action),
+		Services:     make(map[string]*Service),
+		Metrics:      make(map[string]*Stage),
+		ImageActions: make(map[string]*Stage),
 	}
 
 	db, err := kvite.Open(cfg.DBPath, "mistify_agent")
@@ -52,7 +52,6 @@ func NewContext(cfg *config.Config) (*Context, error) {
 		return nil, err
 	}
 	ctx.db = db
-	ctx.ImageClient, err = rpc.NewClient(16000)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +118,16 @@ func NewContext(cfg *config.Config) (*Context, error) {
 		ctx.Metrics[name] = stage
 	}
 
+	for name, cfgImageAction := range cfg.ImageActions {
+		stage := &Stage{
+			Action:  name,
+			Service: ctx.Services[cfgImageAction.Service],
+			Method:  cfgImageAction.Method,
+			Args:    cfgImageAction.Args,
+		}
+
+		ctx.ImageActions[name] = stage
+	}
 	ctx.Runners = make(map[string]*GuestRunner)
 
 	data, err := json.MarshalIndent(ctx, "   ", " ")
