@@ -73,52 +73,49 @@
     },
     "imageActions":{
         "listImages": {
-            "method": "ImageStore.ListImages",
-            "service": "imageService"
+            "method": "Test.ListImages",
+            "service": "test"
         },
         "getImage": {
-            "method": "ImageStore.Get",
-            "service": "imageService"
+            "method": "Test.GetImage",
+            "service": "test"
         },
         "deleteImage": {
-            "method": "ImageStore.DeleteImage",
-            "service": "imageService"
+            "method": "Test.DeleteImage",
+            "service": "test"
         },
         "fetchImage": {
-            "method": "ImageStore.RequestImage",
-            "service": "imageService"
+            "method": "Test.RequestImage",
+            "service": "test"
         },
         "listSnapshots": {
-            "method": "ImageStore.ListSnapshots",
-            "service": "imageService"
+            "method": "Test.ListSnapshots",
+            "service": "test"
         },
         "getSnapshot": {
-            "method": "ImageStore.GetSnapshot",
-            "service": "imageService"
+            "method": "Test.GetSnapshot",
+            "service": "test"
         },
         "createSnapshot": {
-            "method": "ImageStore.CreateSnapshot",
-            "service": "imageService"
+            "method": "Test.CreateSnapshot",
+            "service": "test"
         },
         "deleteSnapshot": {
-            "method": "ImageStore.DeleteSnapshot",
-            "service": "imageService"
+            "method": "Test.DeleteSnapshot",
+            "service": "test"
         },
         "rollbackSnapshot": {
-            "method": "ImageStore.DeleteSnapshot",
-            "service": "imageService"
+            "method": "Test.DeleteSnapshot",
+            "service": "test"
         },
         "downloadSnapshot": {
             "method": "snapshots/download",
-            "service": "imageService"
+            "service": "test"
         }
     },
     "services": {
         "test": {
             "port": 9999
-        },
-        "imageService": {
-            "port": 16000
         }
     }
 }

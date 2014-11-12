@@ -48,6 +48,26 @@ for m in cpu disk nic; do
     http GET guests/$ID/metrics/$m
 done
 
+http GET guests/$ID/snapshots
+
+http POST guests/$ID/snapshots --data-binary '{"id":"'$ID'", "dest": "SNAP"}'
+
+http GET guests/$ID/snapshots/SNAP
+
+http POST guests/$ID/snapshots/SNAP/rollback --data-binary '{"deleteMoreRecent":true}'
+
+curl --fail -sv -X GET -H 'Content-Type: application/json' http://$HOST:$PORT/guests/$ID/snapshots/SNAP/download
+
+http DELETE guests/$ID/snapshots/SNAP
+
+http GET images
+
+http POST images --data-binary '{"source":"http://127.0.0.1/foo"}'
+
+http GET images/foo
+
+http DELETE images/foo
+
 kill $AGENT_PID
 sleep 1
 kill $RPC_PID
