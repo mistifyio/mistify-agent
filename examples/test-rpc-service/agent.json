@@ -71,6 +71,48 @@
             "service": "test"
         }
     },
+    "imageActions":{
+        "listImages": {
+            "method": "Test.ListImages",
+            "service": "test"
+        },
+        "getImage": {
+            "method": "Test.GetImage",
+            "service": "test"
+        },
+        "deleteImage": {
+            "method": "Test.DeleteImage",
+            "service": "test"
+        },
+        "fetchImage": {
+            "method": "Test.RequestImage",
+            "service": "test"
+        },
+        "listSnapshots": {
+            "method": "Test.ListSnapshots",
+            "service": "test"
+        },
+        "getSnapshot": {
+            "method": "Test.GetSnapshot",
+            "service": "test"
+        },
+        "createSnapshot": {
+            "method": "Test.CreateSnapshot",
+            "service": "test"
+        },
+        "deleteSnapshot": {
+            "method": "Test.DeleteSnapshot",
+            "service": "test"
+        },
+        "rollbackSnapshot": {
+            "method": "Test.DeleteSnapshot",
+            "service": "test"
+        },
+        "downloadSnapshot": {
+            "method": "snapshots/download",
+            "service": "test"
+        }
+    },
     "services": {
         "test": {
             "port": 9999

@@ -5,12 +5,15 @@
 package main
 
 import (
-	flag "github.com/docker/docker/pkg/mflag"
-	"github.com/mistifyio/mistify-agent/client"
-	"github.com/mistifyio/mistify-agent/rpc"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+
+	flag "github.com/docker/docker/pkg/mflag"
+	"github.com/mistifyio/mistify-agent/client"
+	"github.com/mistifyio/mistify-agent/rpc"
 )
 
 type (
@@ -114,6 +117,132 @@ func (t *Test) NicMetrics(r *http.Request, request *rpc.GuestMetricsRequest, res
 	return nil
 }
 
+func (t *Test) ListImages(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
+	*response = rpc.ImageResponse{
+		Images: []*rpc.Image{
+			&rpc.Image{
+				Id:       filepath.Join("mistify", "images", "foo"),
+				Volume:   "",
+				Snapshot: "",
+				Size:     1024,
+				Status:   "complete",
+			},
+		},
+	}
+	return nil
+}
+
+func (t *Test) GetImage(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
+	*response = rpc.ImageResponse{
+		Images: []*rpc.Image{
+			&rpc.Image{
+				Id:       filepath.Join("mistify", "images", request.Id),
+				Volume:   "",
+				Snapshot: "",
+				Size:     1024,
+				Status:   "complete",
+			},
+		},
+	}
+	return nil
+}
+
+func (t *Test) DeleteImage(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
+	*response = rpc.ImageResponse{
+		Images: []*rpc.Image{
+			&rpc.Image{
+				Id:       filepath.Join("mistify", "images", request.Id),
+				Volume:   "",
+				Snapshot: "",
+				Size:     1024,
+				Status:   "complete",
+			},
+		},
+	}
+	return nil
+}
+
+func (t *Test) RequestImage(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
+	*response = rpc.ImageResponse{
+		Images: []*rpc.Image{
+			&rpc.Image{
+				Id:       filepath.Join("mistify", "images", "foo"),
+				Volume:   "",
+				Snapshot: "",
+				Size:     1024,
+				Status:   "complete",
+			},
+		},
+	}
+	return nil
+}
+
+func (t *Test) ListSnapshots(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
+	*response = rpc.SnapshotResponse{
+		Snapshots: []*rpc.Snapshot{
+			&rpc.Snapshot{
+				Id:   fmt.Sprintf("%s@%s", filepath.Join("mistify", request.Id), "bar"),
+				Size: 1024,
+			},
+		},
+	}
+	return nil
+}
+
+func (t *Test) GetSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
+	*response = rpc.SnapshotResponse{
+		Snapshots: []*rpc.Snapshot{
+			&rpc.Snapshot{
+				Id:   filepath.Join("mistify", request.Id),
+				Size: 1024,
+			},
+		},
+	}
+	return nil
+}
+
+func (t *Test) CreateSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
+	*response = rpc.SnapshotResponse{
+		Snapshots: []*rpc.Snapshot{
+			&rpc.Snapshot{
+				Id:   fmt.Sprintf("%s@%s", filepath.Join("mistify", request.Id), request.Dest),
+				Size: 1024,
+			},
+		},
+	}
+	return nil
+}
+
+func (t *Test) DeleteSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
+	*response = rpc.SnapshotResponse{
+		Snapshots: []*rpc.Snapshot{
+			&rpc.Snapshot{
+				Id:   filepath.Join("mistify", request.Id),
+				Size: 1024,
+			},
+		},
+	}
+	return nil
+}
+
+func (t *Test) RollbackSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
+	*response = rpc.SnapshotResponse{
+		Snapshots: []*rpc.Snapshot{
+			&rpc.Snapshot{
+				Id:   filepath.Join("mistify", request.Id),
+				Size: 1024,
+			},
+		},
+	}
+	return nil
+}
+
+func (t *Test) DownloadSnapshot(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/octet-stream")
+	fmt.Fprint(w, "foobar")
+	return
+}
+
 func main() {
 
 	var port int
@@ -131,6 +260,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	s.RegisterService(&Test{})
+	test := &Test{}
+	s.RegisterService(test)
+	s.HandleFunc("/snapshots/download", test.DownloadSnapshot)
 	log.Fatal(s.ListenAndServe())
 }

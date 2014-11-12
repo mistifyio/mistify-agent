@@ -24,10 +24,11 @@ type (
 	}
 
 	Config struct {
-		Actions  map[string]Action  `json:"actions"`
-		Services map[string]Service `json:"services"`
-		Metrics  map[string]Stage   `json:"metrics"`
-		DBPath   string             `json:"dbpath"`
+		Actions      map[string]Action  `json:"actions"`
+		Services     map[string]Service `json:"services"`
+		Metrics      map[string]Stage   `json:"metrics"`
+		ImageActions map[string]Stage   `json:"imageActions"`
+		DBPath       string             `json:"dbpath"`
 	}
 )
 
@@ -47,14 +48,28 @@ var (
 		"nic":  true,
 		"disk": true,
 	}
+
+	valid_image_actions map[string]bool = map[string]bool{
+		"listImages":       true,
+		"getImage":         true,
+		"deleteImage":      true,
+		"fetchImage":       true,
+		"listSnapshots":    true,
+		"getSnapshot":      true,
+		"createSnapshot":   true,
+		"deleteSnapshot":   true,
+		"rollbackSnapshot": true,
+		"downloadSnapshot": true,
+	}
 )
 
 func NewConfig() *Config {
 	c := &Config{
-		Actions:  make(map[string]Action),
-		Services: make(map[string]Service),
-		Metrics:  make(map[string]Stage),
-		DBPath:   "/tmp/mistify-agent.db",
+		Actions:      make(map[string]Action),
+		Services:     make(map[string]Service),
+		Metrics:      make(map[string]Stage),
+		ImageActions: make(map[string]Stage),
+		DBPath:       "/tmp/mistify-agent.db",
 	}
 
 	/*
@@ -149,6 +164,21 @@ func (c *Config) AddConfig(path string) error {
 		c.Metrics[name] = metric
 	}
 
+	for name, imageAction := range newConfig.ImageActions {
+		if _, ok := c.ImageActions[name]; ok {
+			return fmt.Errorf("image action %s has already been defined", name)
+		}
+		if _, ok := valid_image_actions[name]; !ok {
+			return fmt.Errorf("image action %s is not a valid image action", name)
+		}
+
+		if err := validateStage(&imageAction, name+" image action"); err != nil {
+			return err
+		}
+
+		c.ImageActions[name] = imageAction
+	}
+
 	return nil
 }
 
@@ -215,6 +245,23 @@ func (c *Config) Fixup() error {
 			metric.Args = make(map[string]string)
 		}
 		c.Metrics[name] = metric
+	}
+
+	for name, _ := range valid_image_actions {
+		_, ok := c.ImageActions[name]
+		if !ok {
+			return fmt.Errorf("nothing defined for image action %s", name)
+		}
+	}
+
+	for name, imageAction := range c.ImageActions {
+		if _, ok := c.Services[imageAction.Service]; !ok {
+			return fmt.Errorf("%s unable to find service %s", name, imageAction.Service)
+		}
+		if imageAction.Args == nil {
+			imageAction.Args = make(map[string]string)
+		}
+		c.ImageActions[name] = imageAction
 	}
 
 	return nil
