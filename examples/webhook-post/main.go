@@ -82,12 +82,12 @@ func (w *Webhook) Post(r *http.Request, request *rpc.GuestRequest, response *rpc
 
 func main() {
 
-	var port int
+	var port uint
 	var h bool
 	var endpoint string
 
 	flag.BoolVar(&h, []string{"h", "#help", "-help"}, false, "display the help")
-	flag.IntVar(&port, []string{"p", "#port", "-port"}, 31245, "listen port")
+	flag.UintVar(&port, []string{"p", "#port", "-port"}, 31245, "listen port")
 	flag.StringVar(&endpoint, []string{"e", "#endpoint", "-endpoint"}, "", "webhook endpoint")
 	flag.Parse()
 

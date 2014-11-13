@@ -245,11 +245,11 @@ func (t *Test) DownloadSnapshot(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	var port int
+	var port uint
 	var h bool
 
 	flag.BoolVar(&h, []string{"h", "#help", "-help"}, false, "display the help")
-	flag.IntVar(&port, []string{"p", "#port", "-port"}, 9999, "listen port")
+	flag.UintVar(&port, []string{"p", "#port", "-port"}, 9999, "listen port")
 	flag.Parse()
 
 	if h {
