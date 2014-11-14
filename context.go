@@ -9,6 +9,7 @@ import (
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/config"
 	"github.com/mistifyio/mistify-agent/log"
+	"github.com/mistifyio/mistify-agent/stats"
 )
 
 type (
@@ -54,6 +55,10 @@ func NewContext(cfg *config.Config) (*Context, error) {
 	ctx.db = db
 	if err != nil {
 		return nil, err
+	}
+
+	if cfg.StatsD != "" {
+		go stats.Send(cfg.StatsD)
 	}
 
 	for name, service := range cfg.Services {
