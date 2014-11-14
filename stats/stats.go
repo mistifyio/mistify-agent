@@ -3,12 +3,11 @@ package stats
 import (
 	"fmt"
 	"net"
-	"sync"
 )
 
 var (
-	mutex sync.RWMutex
-	stats []string
+	stats      = make(chan string)
+	remoteAddr *net.TCPAddr
 )
 
 func Counter(key string, val int) {
@@ -32,18 +31,22 @@ func Set(key string, val int) {
 }
 
 func AddStat(format string, params ...interface{}) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	stats = append(stats, Sprintf(format, params...))
+	stats <- fmt.Sprintf(format, params...)
 }
 
 func Flush() error {
-	mutex.RLock()
-	defer mutex.Unlock()
+	conn, err := net.DialTCP("tcp", nil, remoteAddr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
 
-	// do stuff
+	for stat := range stats {
+		_, err := conn.Write([]byte(stat))
+		if err != nil {
+			return nil
+		}
+	}
 
-	stats = []string{}
 	return nil
 }
