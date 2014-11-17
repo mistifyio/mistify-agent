@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-var stats = make(chan string)
+var statChannel = make(chan string)
 
 func Counter(key string, val int) {
 	AddStat("%s:%d|c", key, val)
@@ -29,27 +29,27 @@ func Set(key string, val int) {
 }
 
 func AddStat(format string, params ...interface{}) {
-	stats <- fmt.Sprintf(format, params...)
+	statChannel <- fmt.Sprintf(format, params...)
 }
 
 func Send(addr string) error {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+	udpAddr, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
 		return err
 	}
 
-	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	for stat := range stats {
+	for stat := range statChannel {
 		_, err := conn.Write([]byte(stat))
 		if err != nil {
 			log.Error("Couldn't send to statsd: %s. Reconnecting.\n", err.Error())
 
-			conn, err = net.DialTCP("tcp", nil, tcpAddr)
+			conn, err = net.DialUDP("udp", nil, udpAddr)
 			if err != nil {
 				log.Error("Couldn't reconnect to statsd: %s.\n", err.Error())
 			}
@@ -57,4 +57,8 @@ func Send(addr string) error {
 	}
 
 	return nil
+}
+
+func CloseChannel() {
+	close(statChannel)
 }
