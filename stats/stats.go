@@ -34,6 +34,7 @@ func AddStat(format string, params ...interface{}) {
 
 func Send(addr string) error {
 	udpAddr, err := net.ResolveUDPAddr("udp", addr)
+
 	if err != nil {
 		return err
 	}
