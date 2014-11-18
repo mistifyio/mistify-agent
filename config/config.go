@@ -29,6 +29,7 @@ type (
 		Metrics      map[string]Stage   `json:"metrics"`
 		ImageActions map[string]Stage   `json:"imageActions"`
 		DBPath       string             `json:"dbpath"`
+		StatsD       string             `json:"statsd"`
 	}
 )
 
@@ -70,6 +71,7 @@ func NewConfig() *Config {
 		Metrics:      make(map[string]Stage),
 		ImageActions: make(map[string]Stage),
 		DBPath:       "/tmp/mistify-agent.db",
+		StatsD:       "localhost:8125",
 	}
 
 	/*
