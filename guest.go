@@ -230,7 +230,7 @@ func (c *Chain) GuestActionWrapper(action string) http.HandlerFunc {
 			}
 			return r.JSON(202, guest)
 		})
-	})
+	}, fmt.Sprintf("agent.guests.action.%s", action))
 }
 
 func getGuestCPUMetrics(r *HttpRequest) *HttpErrorMessage {

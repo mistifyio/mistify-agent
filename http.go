@@ -12,6 +12,7 @@ import (
 	"github.com/justinas/alice"
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/log"
+	"github.com/mistifyio/mistify-agent/stats"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -73,37 +74,37 @@ func Run(ctx *Context, address string) error {
 			}),
 	}
 
-	r.HandleFunc("/metadata", chain.RequestWrapper(getMetadata)).Methods("GET")
-	r.HandleFunc("/metadata", chain.RequestWrapper(setMetadata)).Methods("PATCH")
+	r.HandleFunc("/metadata", chain.RequestWrapper(getMetadata, "agent.metadata.get")).Methods("GET")
+	r.HandleFunc("/metadata", chain.RequestWrapper(setMetadata, "agent.metadata.set")).Methods("PATCH")
 
-	r.HandleFunc("/guests", chain.RequestWrapper(listGuests)).Methods("GET")
-	r.HandleFunc("/guests", chain.RequestWrapper(createGuest)).Methods("POST")
+	r.HandleFunc("/guests", chain.RequestWrapper(listGuests, "agent.guests.list")).Methods("GET")
+	r.HandleFunc("/guests", chain.RequestWrapper(createGuest, "agent.guests.create")).Methods("POST")
 
-	r.HandleFunc("/guests/{id}", chain.RequestWrapper(getGuest)).Methods("GET")
-	r.HandleFunc("/guests/{id}", chain.RequestWrapper(deleteGuest)).Methods("DELETE")
-	r.HandleFunc("/guests/{id}/metadata", chain.RequestWrapper(getGuestMetadata)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metadata", chain.RequestWrapper(setGuestMetadata)).Methods("PATCH")
+	r.HandleFunc("/guests/{id}", chain.RequestWrapper(getGuest, "agent.guests.get")).Methods("GET")
+	r.HandleFunc("/guests/{id}", chain.RequestWrapper(deleteGuest, "agent.guests.delete")).Methods("DELETE")
+	r.HandleFunc("/guests/{id}/metadata", chain.RequestWrapper(getGuestMetadata, "agent.guests.metadata.get")).Methods("GET")
+	r.HandleFunc("/guests/{id}/metadata", chain.RequestWrapper(setGuestMetadata, "agent.guests.metadata.set")).Methods("PATCH")
 
-	r.HandleFunc("/guests/{id}/metrics/cpu", chain.RequestWrapper(getGuestCPUMetrics)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metrics/disk", chain.RequestWrapper(getGuestDiskMetrics)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metrics/nic", chain.RequestWrapper(getGuestNicMetrics)).Methods("GET")
+	r.HandleFunc("/guests/{id}/metrics/cpu", chain.RequestWrapper(getGuestCPUMetrics, "agent.metrics.cpu")).Methods("GET")
+	r.HandleFunc("/guests/{id}/metrics/disk", chain.RequestWrapper(getGuestDiskMetrics, "agent.metrics.disk")).Methods("GET")
+	r.HandleFunc("/guests/{id}/metrics/nic", chain.RequestWrapper(getGuestNicMetrics, "agent.metrics.nic")).Methods("GET")
 
 	for _, action := range []string{"shutdown", "reboot", "restart", "poweroff", "start", "suspend", "delete"} {
 		r.HandleFunc(fmt.Sprintf("/guests/{id}/%s", action), chain.GuestActionWrapper(action)).Methods("POST")
 	}
 
 	for _, prefix := range []string{"/guests/{id}", "/guests/{id}/disks/{disk}"} {
-		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.RequestWrapper(listSnapshots)).Methods("GET")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.RequestWrapper(createSnapshot)).Methods("POST")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.RequestWrapper(getSnapshot)).Methods("GET")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.RequestWrapper(deleteSnapshot)).Methods("DELETE")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/rollback", prefix), chain.RequestWrapper(rollbackSnapshot)).Methods("POST")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/download", prefix), chain.RequestWrapper(downloadSnapshot)).Methods("GET")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.RequestWrapper(listSnapshots, "agent.snapshots.list")).Methods("GET")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.RequestWrapper(createSnapshot, "agent.snapshots.create")).Methods("POST")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.RequestWrapper(getSnapshot, "agent.snapshots.get")).Methods("GET")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.RequestWrapper(deleteSnapshot, "agent.snapshots.delete")).Methods("DELETE")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/rollback", prefix), chain.RequestWrapper(rollbackSnapshot, "agent.snapshots.rollback")).Methods("POST")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/download", prefix), chain.RequestWrapper(downloadSnapshot, "agent.snapshots.download")).Methods("GET")
 	}
-	r.HandleFunc("/images", chain.RequestWrapper(listImages)).Methods("GET")
-	r.HandleFunc("/images", chain.RequestWrapper(fetchImage)).Methods("POST")
-	r.HandleFunc("/images/{id}", chain.RequestWrapper(getImage)).Methods("GET")
-	r.HandleFunc("/images/{id}", chain.RequestWrapper(deleteImage)).Methods("DELETE")
+	r.HandleFunc("/images", chain.RequestWrapper(listImages, "agent.images.list")).Methods("GET")
+	r.HandleFunc("/images", chain.RequestWrapper(fetchImage, "agent.images.fetch")).Methods("POST")
+	r.HandleFunc("/images/{id}", chain.RequestWrapper(getImage, "agent.images.get")).Methods("GET")
+	r.HandleFunc("/images/{id}", chain.RequestWrapper(deleteImage, "agent.images.delete")).Methods("DELETE")
 
 	/*
 		guest := guests.PathPrefix("/{id}").Subrouter()
@@ -122,8 +123,10 @@ func Run(ctx *Context, address string) error {
 	return s.ListenAndServe()
 }
 
-func (c *Chain) RequestWrapper(fn func(*HttpRequest) *HttpErrorMessage) http.HandlerFunc {
+func (c *Chain) RequestWrapper(fn func(*HttpRequest) *HttpErrorMessage, metricName string) http.HandlerFunc {
 	return c.Then(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		timer := stats.StartTimer(metricName)
+
 		req := HttpRequest{
 			Context:        c.ctx,
 			ResponseWriter: w,
@@ -133,6 +136,8 @@ func (c *Chain) RequestWrapper(fn func(*HttpRequest) *HttpErrorMessage) http.Han
 			log.Error("%s\n\t%s\n", err.Message, strings.Join(err.Stack, "\t\n\t"))
 			req.JSON(err.Code, err)
 		}
+
+		timer.Stop()
 	})).ServeHTTP
 }
 
