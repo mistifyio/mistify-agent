@@ -48,6 +48,9 @@ for m in cpu disk nic; do
     http GET guests/$ID/metrics/$m
 done
 
+http GET metrics
+http GET metrics
+
 kill $AGENT_PID
 sleep 1
 kill $RPC_PID

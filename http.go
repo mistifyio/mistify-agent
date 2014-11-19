@@ -6,12 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bakins/net-http-recover"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	"github.com/justinas/alice"
-	"github.com/mistifyio/kvite"
-	"github.com/mistifyio/mistify-agent/log"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -19,6 +13,13 @@ import (
 	runtime_pprof "runtime/pprof"
 	"strings"
 	"time"
+
+	"github.com/bakins/net-http-recover"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/justinas/alice"
+	"github.com/mistifyio/kvite"
+	"github.com/mistifyio/mistify-agent/log"
 )
 
 type (
@@ -73,8 +74,10 @@ func Run(ctx *Context, address string) error {
 			}),
 	}
 
-	r.HandleFunc("/metadata", chain.RequestWrapper(getMetadata)).Methods("GET")
-	r.HandleFunc("/metadata", chain.RequestWrapper(setMetadata)).Methods("PATCH")
+	r.HandleFunc("/metrics", chain.RequestWrapperM(getMetrics, "metrics", "get")).Methods("GET")
+
+	r.HandleFunc("/metadata", chain.RequestWrapperM(getMetadata, "metadata", "get")).Methods("GET")
+	r.HandleFunc("/metadata", chain.RequestWrapperM(setMetadata, "metadata", "patch")).Methods("PATCH")
 
 	r.HandleFunc("/guests", chain.RequestWrapper(listGuests)).Methods("GET")
 	r.HandleFunc("/guests", chain.RequestWrapper(createGuest)).Methods("POST")
@@ -128,6 +131,43 @@ func (c *Chain) RequestWrapper(fn func(*HttpRequest) *HttpErrorMessage) http.Han
 	})).ServeHTTP
 }
 
+// Inserts a string value at an index into the slice
+func insert(i int, v string, src []string) []string {
+	s := make([]string, len(src))
+	copy(s, src)
+	s = append(s, "")
+	copy(s[i+1:], s[i:])
+	s[i] = v
+	return s
+}
+
+func (c *Chain) RequestWrapperM(fn func(*HttpRequest) *HttpErrorMessage, metricKey ...string) http.HandlerFunc {
+	timeKey := insert(0, "http", metricKey)
+	timeKey = append(timeKey, "time")
+
+	countKey := insert(0, "http", metricKey)
+	countKey = append(countKey, "count")
+
+	return c.Then(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		now := time.Now()
+
+		req := HttpRequest{
+			Context:        c.ctx,
+			ResponseWriter: w,
+			Request:        r,
+		}
+		err := fn(&req)
+
+		c.ctx.MetricsSink.MeasureSince(timeKey, now)
+		c.ctx.MetricsSink.IncrCounter(countKey, 1)
+
+		if err != nil {
+			log.Error("%s\n\t%s\n", err.Message, strings.Join(err.Stack, "\t\n\t"))
+			req.JSON(err.Code, err)
+		}
+	})).ServeHTTP
+}
+
 func (r *HttpRequest) Parameter(key string) string {
 	vars := r.vars
 
@@ -175,6 +215,10 @@ func (r *HttpRequest) NewError(err error, code int) *HttpErrorMessage {
 		msg.Stack = append(msg.Stack, fmt.Sprintf("%s:%d (0x%x)", file, line, pc))
 	}
 	return &msg
+}
+
+func getMetrics(r *HttpRequest) *HttpErrorMessage {
+	return r.JSON(200, r.Context.MetricsMap)
 }
 
 func getMetadata(r *HttpRequest) *HttpErrorMessage {

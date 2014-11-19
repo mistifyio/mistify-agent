@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/armon/go-metrics"
+	"github.com/bakins/go-metrics-map"
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/config"
@@ -26,6 +28,9 @@ type (
 
 		Metrics map[string]*Stage
 		// TODO: have a metrics method/channel
+
+		MetricsSink *metrics.Metrics
+		MetricsMap  *mapsink.MapSink
 	}
 
 	// GuestRunner represents a task runner for a single guest
@@ -127,6 +132,12 @@ func NewContext(cfg *config.Config) (*Context, error) {
 	}
 
 	log.Info("%s\n", data)
+
+	// TODO: use fanout sink and add statsd
+	conf := metrics.DefaultConfig("mistify-agent")
+	conf.EnableHostname = false
+	ctx.MetricsMap = mapsink.New()
+	ctx.MetricsSink, _ = metrics.New(conf, ctx.MetricsMap)
 
 	return ctx, nil
 }
