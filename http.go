@@ -5,20 +5,23 @@ package agent
 import (
 	"encoding/json"
 	"errors"
+	_ "expvar"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"runtime"
+	"strings"
+	"time"
+
 	"github.com/bakins/net-http-recover"
+	"github.com/gorilla/context"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"github.com/mistifyio/kvite"
+	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/log"
-	"net/http"
-	"net/http/pprof"
-	"os"
-	"runtime"
-	runtime_pprof "runtime/pprof"
-	"strings"
-	"time"
 )
 
 type (
@@ -41,29 +44,29 @@ type (
 	}
 )
 
+const (
+	GUEST_KEY = 1 << iota
+	CONTEXT_KEY
+)
+
 var (
 	NotFound = errors.New("not found")
 )
-
-func AttachProfiler(router *mux.Router) {
-	router.HandleFunc("/debug/pprof/", pprof.Index)
-	for _, profile := range runtime_pprof.Profiles() {
-		router.Handle(fmt.Sprintf("/debug/pprof/%s", profile.Name()), pprof.Handler(profile.Name()))
-	}
-	router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	router.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-}
 
 func Run(ctx *Context, address string) error {
 	r := mux.NewRouter()
 	r.StrictSlash(true)
 
-	AttachProfiler(r)
+	// default mux will have the profiler handlers
+	r.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 
+	// TODO: normal chain, no need for a wrapper
 	chain := Chain{
 		ctx: ctx,
 		Chain: alice.New(
+			func(h http.Handler) http.Handler {
+				return ContextHandler(ctx, h)
+			},
 			func(h http.Handler) http.Handler {
 				return handlers.CombinedLoggingHandler(os.Stdout, h)
 			},
@@ -73,23 +76,25 @@ func Run(ctx *Context, address string) error {
 			}),
 	}
 
-	r.HandleFunc("/metadata", chain.RequestWrapper(getMetadata)).Methods("GET")
-	r.HandleFunc("/metadata", chain.RequestWrapper(setMetadata)).Methods("PATCH")
+	guest_chain := chain.Append(GuestHandler)
 
-	r.HandleFunc("/guests", chain.RequestWrapper(listGuests)).Methods("GET")
-	r.HandleFunc("/guests", chain.RequestWrapper(createGuest)).Methods("POST")
+	r.Handle("/metadata", chain.ThenFunc(getMetadata)).Methods("GET")
+	r.Handle("/metadata", chain.ThenFunc(setMetadata)).Methods("PATCH")
 
-	r.HandleFunc("/guests/{id}", chain.RequestWrapper(getGuest)).Methods("GET")
-	r.HandleFunc("/guests/{id}", chain.RequestWrapper(deleteGuest)).Methods("DELETE")
-	r.HandleFunc("/guests/{id}/metadata", chain.RequestWrapper(getGuestMetadata)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metadata", chain.RequestWrapper(setGuestMetadata)).Methods("PATCH")
+	r.Handle("/guests", chain.ThenFunc(listGuests)).Methods("GET")
+	r.Handle("/guests", chain.ThenFunc(createGuest)).Methods("POST")
 
-	r.HandleFunc("/guests/{id}/metrics/cpu", chain.RequestWrapper(getGuestCPUMetrics)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metrics/disk", chain.RequestWrapper(getGuestDiskMetrics)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metrics/nic", chain.RequestWrapper(getGuestNicMetrics)).Methods("GET")
+	r.Handle("/guests/{guest_id}", guest_chain.ThenFunc(getGuest)).Methods("GET")
+	r.Handle("/guests/{guest_id}", guest_chain.ThenFunc(deleteGuest)).Methods("DELETE")
+	r.Handle("/guests/{guest_id}/metadata", guest_chain.ThenFunc(getGuestMetadata)).Methods("GET")
+	r.Handle("/guests/{guest_id}/metadata", guest_chain.ThenFunc(setGuestMetadata)).Methods("PATCH")
+
+	r.Handle("/guests/{guest_id}/metrics/cpu", guest_chain.ThenFunc(getGuestCPUMetrics)).Methods("GET")
+	r.Handle("/guests/{guest_id}/metrics/disk", guest_chain.ThenFunc(getGuestDiskMetrics)).Methods("GET")
+	r.Handle("/guests/{guest_id}/metrics/nic", guest_chain.ThenFunc(getGuestNicMetrics)).Methods("GET")
 
 	for _, action := range []string{"shutdown", "reboot", "restart", "poweroff", "start", "suspend", "delete"} {
-		r.HandleFunc(fmt.Sprintf("/guests/{id}/%s", action), chain.GuestActionWrapper(action)).Methods("POST")
+		r.Handle(fmt.Sprintf("/guests/{id}/%s", action), guest_chain.Then(actionWrapper(action))).Methods("POST")
 	}
 
 	for _, prefix := range []string{"/guests/{id}", "/guests/{id}/disks/{disk}"} {
@@ -185,10 +190,13 @@ func (r *HttpRequest) NewError(err error, code int) *HttpErrorMessage {
 	return &msg
 }
 
-func getMetadata(r *HttpRequest) *HttpErrorMessage {
+func getMetadata(w http.ResponseWriter, r *http.Request) {
+	//assume we get called after ContextHandler. If not, this will panic
+	ctx := GetContext(r)
+
 	metadata := make(map[string]string)
 
-	err := r.Context.db.Transaction(func(tx *kvite.Tx) error {
+	err := ctx.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("hypervisor-metadata")
 		if err != nil {
 			return err
@@ -200,21 +208,26 @@ func getMetadata(r *HttpRequest) *HttpErrorMessage {
 	})
 
 	if err != nil {
-		return r.NewError(err, 500)
+		NewError(err, 500).Serve(w)
+		return
 	}
 
-	return r.JSON(200, metadata)
+	JSON(w, 200, metadata)
 }
 
-func setMetadata(r *HttpRequest) *HttpErrorMessage {
+func setMetadata(w http.ResponseWriter, r *http.Request) {
+	//assume we get called after ContextHandler. If not, this will panic
+	ctx := GetContext(r)
+
 	var metadata map[string]string
 
-	err := json.NewDecoder(r.Request.Body).Decode(&metadata)
+	err := json.NewDecoder(r.Body).Decode(&metadata)
 	if err != nil {
-		return r.NewError(err, 400)
+		NewError(err, 400).Serve(w)
+		return
 	}
 
-	err = r.Context.db.Transaction(func(tx *kvite.Tx) error {
+	err = ctx.db.Transaction(func(tx *kvite.Tx) error {
 		for key, value := range metadata {
 			b, err := tx.Bucket("hypervisor-metadata")
 			if err != nil {
@@ -234,8 +247,120 @@ func setMetadata(r *HttpRequest) *HttpErrorMessage {
 	})
 
 	if err != nil {
-		return r.NewError(err, 500)
+		NewError(err, 500).Serve(w)
+		return
 	}
 
-	return getMetadata(r)
+	getMetadata(w, r)
+}
+
+// ContextHandler is an http.handler "middleware" that add the magic context to request
+func ContextHandler(ctx *Context, h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		context.Set(r, CONTEXT_KEY, ctx)
+		h.ServeHTTP(w, r)
+	})
+}
+
+// GetContext retrieves the magic context that has been placed on the request by
+//  ContextHandler
+func GetContext(r *http.Request) *Context {
+	if rv := context.Get(r, CONTEXT_KEY); rv != nil {
+		return rv.(*Context)
+	}
+	return nil
+}
+
+// GuestHandler is an http.handler "middleware" that looks up a guest
+// and adds to context. The guest id should be stored in the parameter 'guest_id'.
+// This should always be added after ContextHandler
+func GuestHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetContext(r)
+		if ctx == nil {
+			NewError(errors.New("no context found"), 500).Serve(w)
+			return
+		}
+
+		vars := mux.Vars(r)
+		id := vars["guest_id"]
+
+		if id == "" {
+			NewError(errors.New("no guest id in request"), 400).Serve(w)
+			return
+		}
+
+		var g client.Guest
+		err := ctx.db.Transaction(func(tx *kvite.Tx) error {
+			b, err := tx.Bucket("guests")
+			if err != nil {
+				return err
+			}
+			data, err := b.Get(id)
+			if err != nil {
+				return err
+			}
+			if data == nil {
+				return NotFound
+			}
+
+			return json.Unmarshal(data, &g)
+		})
+
+		if err != nil {
+			code := 500
+			if err == NotFound {
+				code = 404
+			}
+			NewError(err, code).Serve(w)
+		}
+
+		context.Set(r, GUEST_KEY, &g)
+		h.ServeHTTP(w, r)
+	})
+}
+
+// GuestContext retrieves the magic context that has been placed on the request by
+//  GuestHandler
+func GetGuest(r *http.Request) *client.Guest {
+	if rv := context.Get(r, GUEST_KEY); rv != nil {
+		return rv.(*client.Guest)
+	}
+	return nil
+}
+
+// JSON encodes the objects and sets the appropriate http headers
+func JSON(w http.ResponseWriter, code int, obj interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	encoder := json.NewEncoder(w)
+	if err := encoder.Encode(obj); err != nil {
+		// what can we do with error???
+	}
+}
+
+// NewError is a convinience method for wrapping an http response
+func NewError(err error, code int) *HttpErrorMessage {
+	if code <= 0 {
+		code = 500
+	}
+	msg := HttpErrorMessage{
+		Message: err.Error(),
+		Code:    code,
+		Stack:   make([]string, 0, 4),
+	}
+	for i := 1; ; i++ { //
+		pc, file, line, ok := runtime.Caller(i)
+		if !ok {
+			break
+		}
+		// Print this much at least.  If we can't find the source, it won't show.
+		msg.Stack = append(msg.Stack, fmt.Sprintf("%s:%d (0x%x)", file, line, pc))
+	}
+	return &msg
+}
+
+// Serve returns the error message to the client
+func (msg *HttpErrorMessage) Serve(w http.ResponseWriter) {
+	JSON(w, msg.Code, msg)
 }

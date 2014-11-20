@@ -2,6 +2,7 @@ package agent
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -11,7 +12,6 @@ import (
 )
 
 type (
-
 	// Guest is a "helper struct"
 	Guest struct {
 		context *Context
@@ -53,10 +53,11 @@ func (ctx *Context) DeleteGuest(g *client.Guest) error {
 	return nil
 }
 
-func listGuests(r *HttpRequest) *HttpErrorMessage {
+func listGuests(w http.ResponseWriter, r *http.Request) {
+	ctx := GetContext(r)
 	guests := make([]*client.Guest, 0)
 
-	err := r.Context.db.Transaction(func(tx *kvite.Tx) error {
+	err := ctx.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guests")
 		if err != nil {
 			return err
@@ -73,10 +74,11 @@ func listGuests(r *HttpRequest) *HttpErrorMessage {
 	})
 
 	if err != nil {
-		return r.NewError(err, 500)
+		NewError(err, 500).Serve(w)
+		return
 	}
 
-	return r.JSON(200, guests)
+	JSON(w, 200, guests)
 }
 
 func (ctx *Context) runSyncAction(guest *client.Guest) (*client.Guest, error) {
@@ -103,14 +105,17 @@ func (ctx *Context) runAsyncAction(guest *client.Guest) (*client.Guest, error) {
 
 }
 
-func createGuest(r *HttpRequest) *HttpErrorMessage {
+func createGuest(w http.ResponseWriter, r *http.Request) {
+	ctx := GetContext(r)
 	var g client.Guest
-	err := json.NewDecoder(r.Request.Body).Decode(&g)
+	err := json.NewDecoder(r.Body).Decode(&g)
 	if err != nil {
-		return r.NewError(err, 400)
+		NewError(err, 400).Serve(w)
+		return
 	}
 	if g.Id != "" {
-		return r.NewError(fmt.Errorf("id must not be set"), 400)
+		NewError(errors.New("id must not be set"), 400).Serve(w)
+		return
 	}
 	g.Id = uuid.New()
 
@@ -118,24 +123,26 @@ func createGuest(r *HttpRequest) *HttpErrorMessage {
 	g.State = "create"
 	g.Action = "create"
 
-	// TODO: general validations, like memory, disks look sane, etc
-
-	guest, err := r.Context.runSyncAction(&g)
+	guest, err := ctx.runSyncAction(&g)
 	if err != nil {
-		return r.NewError(err, 500)
+		NewError(err, 500).Serve(w)
+		return
 	}
 
-	if err := r.Context.PersistGuest(guest); err != nil {
-		return r.NewError(err, 500)
+	if err := ctx.PersistGuest(guest); err != nil {
+		NewError(err, 500).Serve(w)
+		return
 	}
 
-	runner, err := r.Context.CreateGuestRunner(guest)
+	runner, err := ctx.CreateGuestRunner(guest)
 	if err != nil {
-		return r.NewError(err, 500)
+		NewError(err, 500).Serve(w)
+		return
 	}
 
 	runner.Nudge()
-	return r.JSON(202, guest)
+
+	JSON(w, 202, g)
 }
 
 func withGuest(r *HttpRequest, fn func(g *client.Guest) *HttpErrorMessage) *HttpErrorMessage {
@@ -167,51 +174,59 @@ func withGuest(r *HttpRequest, fn func(g *client.Guest) *HttpErrorMessage) *Http
 	return fn(&g)
 }
 
-func getGuest(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-		return r.JSON(200, g)
-	})
+func getGuest(w http.ResponseWriter, r *http.Request) {
+	// we always assume that this is called after GuestHandler, it handles the error case
+	if g := GetGuest(r); g != nil {
+		JSON(w, 200, g)
+	}
 }
 
-func deleteGuest(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-		g.Action = "delete"
-		err := r.Context.PersistGuest(g)
-		if err != nil {
-			return r.NewError(err, 500)
-		}
-		return r.JSON(202, g)
-	})
+func deleteGuest(w http.ResponseWriter, r *http.Request) {
+	// will panic if not called after GuestHandler
+	g := GetGuest(r)
+	ctx := GetContext(r)
+	g.Action = "delete"
+	err := ctx.PersistGuest(g)
+	if err != nil {
+		NewError(err, 500).Serve(w)
+	}
+	JSON(w, 202, g)
 }
 
-func getGuestMetadata(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-		return r.JSON(200, g.Metadata)
-	})
+func getGuestMetadata(w http.ResponseWriter, r *http.Request) {
+	if g := GetGuest(r); g != nil {
+		JSON(w, 200, g.Metadata)
+	}
 }
 
-func setGuestMetadata(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-		var metadata map[string]string
-		err := json.NewDecoder(r.Request.Body).Decode(&metadata)
-		if err != nil {
-			return r.NewError(err, 400)
-		}
+func setGuestMetadata(w http.ResponseWriter, r *http.Request) {
+	// will panic if not called after GuestHandler
+	g := GetGuest(r)
+	var metadata map[string]string
+	err := json.NewDecoder(r.Body).Decode(&metadata)
+	if err != nil {
+		NewError(err, 400).Serve(w)
+		return
+	}
 
-		for key, value := range metadata {
-			if value == "" {
-				delete(g.Metadata, key)
-			} else {
-				g.Metadata[key] = value
-			}
+	for key, value := range metadata {
+		if value == "" {
+			delete(g.Metadata, key)
+		} else {
+			g.Metadata[key] = value
 		}
+	}
 
-		err = r.Context.PersistGuest(g)
-		if err != nil {
-			return r.NewError(err, 500)
-		}
-		return r.JSON(200, g.Metadata)
-	})
+	//assume we get called after ContextHandler. If not, this will panic
+	ctx := GetContext(r)
+
+	err = ctx.PersistGuest(g)
+	if err != nil {
+		NewError(err, 400).Serve(w)
+		return
+	}
+	JSON(w, 200, g.Metadata)
+
 }
 
 func (ctx *Context) switchToRunning(guest *client.Guest) error {
@@ -219,46 +234,52 @@ func (ctx *Context) switchToRunning(guest *client.Guest) error {
 	return ctx.PersistGuest(guest)
 }
 
-// GuestActionWrapper wraps an HTTP request with a Guest action to avoid duplicated code
-func (c *Chain) GuestActionWrapper(action string) http.HandlerFunc {
-	return c.RequestWrapper(func(r *HttpRequest) *HttpErrorMessage {
-		return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-			g.Action = action
-			guest, err := r.Context.runSyncAction(g)
-			if err != nil {
-				return r.NewError(err, 500)
-			}
-			return r.JSON(202, guest)
-		})
+func actionWrapper(action string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		g := GetGuest(r)
+		ctx := GetContext(r)
+		g.Action = action
+		guest, err := ctx.runSyncAction(g)
+		if err != nil {
+			NewError(err, 500).Serve(w)
+			return
+		}
+		JSON(w, 200, guest)
 	})
 }
 
-func getGuestCPUMetrics(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-		metrics, err := r.Context.getCpuMetrics(g)
-		if err != nil {
-			return r.NewError(err, 500)
-		}
-		return r.JSON(200, metrics)
-	})
+func getGuestCPUMetrics(w http.ResponseWriter, r *http.Request) {
+	g := GetGuest(r)
+	ctx := GetContext(r)
+	metrics, err := ctx.getCpuMetrics(g)
+	if err != nil {
+		NewError(err, 500).Serve(w)
+		return
+	}
+	JSON(w, 200, metrics)
+
 }
 
-func getGuestNicMetrics(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-		metrics, err := r.Context.getNicMetrics(g)
-		if err != nil {
-			return r.NewError(err, 500)
-		}
-		return r.JSON(200, metrics)
-	})
+func getGuestNicMetrics(w http.ResponseWriter, r *http.Request) {
+	g := GetGuest(r)
+	ctx := GetContext(r)
+	metrics, err := ctx.getNicMetrics(g)
+	if err != nil {
+		NewError(err, 500).Serve(w)
+		return
+	}
+	JSON(w, 200, metrics)
+
 }
 
-func getGuestDiskMetrics(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-		metrics, err := r.Context.getDiskMetrics(g)
-		if err != nil {
-			return r.NewError(err, 500)
-		}
-		return r.JSON(200, metrics)
-	})
+func getGuestDiskMetrics(w http.ResponseWriter, r *http.Request) {
+	g := GetGuest(r)
+	ctx := GetContext(r)
+	metrics, err := ctx.getDiskMetrics(g)
+	if err != nil {
+		NewError(err, 500).Serve(w)
+		return
+	}
+	JSON(w, 200, metrics)
+
 }
