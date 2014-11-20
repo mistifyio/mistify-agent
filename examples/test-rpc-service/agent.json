@@ -1,7 +1,7 @@
 {
     "actions": {
         "restart": {
-            "sync": [
+            "stages": [
                 {
                     "method": "Test.Restart",
                     "service": "test"
@@ -9,7 +9,7 @@
             ]
         },
         "poweroff":{
-            "sync": [
+            "stages": [
                 {
                     "method": "Test.Poweroff",
                     "service": "test"
@@ -17,7 +17,7 @@
             ]
         },
         "delete":{
-            "async": [
+            "stages": [
                 {
                     "method": "Test.Delete",
                     "service": "test"
@@ -25,7 +25,7 @@
             ]
         },
         "create": {
-            "async": [
+            "stages": [
                 {
                     "method": "Test.Create",
                     "service": "test"
@@ -33,7 +33,7 @@
             ]
         },
         "run": {
-            "async": [
+            "stages": [
                 {
                     "method": "Test.Run",
                     "service": "test"
@@ -41,7 +41,7 @@
             ]
         },
         "reboot": {
-            "sync": [
+            "stages": [
                 {
                     "method": "Test.Reboot",
                     "service": "test"
@@ -49,72 +49,124 @@
             ]
         },
         "shutdown": {
-            "sync": [
+            "stages": [
                 {
                     "method": "Test.Shutdown",
                     "service": "test"
                 }
             ]
-        }
-    },
-    "metrics": {
-        "cpu": {
-            "method": "Test.CpuMetrics",
-            "service": "test"
         },
-        "nic": {
-            "method": "Test.NicMetrics",
-            "service": "test"
+        "cpuMetrics": {
+            "stages": [
+                {
+                    "method": "Test.CpuMetrics",
+                    "service": "test"
+                }
+            ]
         },
-        "disk": {
-            "method": "Test.DiskMetrics",
-            "service": "test"
-        }
-    },
-    "imageActions":{
+        "nicMetrics": {
+            "stages": [
+                {
+                    "method": "Test.NicMetrics",
+                    "service": "test"
+                }
+            ]
+        },
+        "diskMetrics": {
+            "stages": [
+                {
+                    "method": "Test.DiskMetrics",
+                    "service": "test"
+                }
+            ]
+        },
         "listImages": {
-            "method": "Test.ListImages",
-            "service": "test"
+            "stages": [
+                {
+                    "method": "Test.ListImages",
+                    "service": "test"
+                }
+            ]
         },
         "getImage": {
-            "method": "Test.GetImage",
-            "service": "test"
+            "stages": [
+                {
+                    "method": "Test.GetImage",
+                    "service": "test"
+                }
+            ]
         },
         "deleteImage": {
-            "method": "Test.DeleteImage",
-            "service": "test"
+            "stages": [
+                {
+                    "method": "Test.DeleteImage",
+                    "service": "test"
+                }
+            ]
         },
         "fetchImage": {
-            "method": "Test.RequestImage",
-            "service": "test"
+            "stages": [
+                {
+                    "method": "Test.RequestImage",
+                    "service": "test"
+                }
+            ]
         },
         "listSnapshots": {
-            "method": "Test.ListSnapshots",
-            "service": "test"
+            "stages": [
+                {
+                    "method": "Test.ListSnapshots",
+                    "service": "test"
+                }
+            ]
         },
         "getSnapshot": {
-            "method": "Test.GetSnapshot",
-            "service": "test"
+            "stages": [
+                {
+                    "method": "Test.GetSnapshot",
+                    "service": "test"
+                }
+            ]
         },
         "createSnapshot": {
-            "method": "Test.CreateSnapshot",
-            "service": "test"
+            "stages": [
+                {
+                    "method": "Test.CreateSnapshot",
+                    "service": "test"
+                }
+            ]
         },
         "deleteSnapshot": {
-            "method": "Test.DeleteSnapshot",
-            "service": "test"
+            "stages": [
+                {
+                    "method": "Test.DeleteSnapshot",
+                    "service": "test"
+                }
+            ]
         },
         "rollbackSnapshot": {
-            "method": "Test.DeleteSnapshot",
-            "service": "test"
+            "stages": [
+                {
+                    "method": "Test.DeleteSnapshot",
+                    "service": "test"
+                }
+            ]
         },
         "downloadSnapshot": {
-            "method": "snapshots/download",
-            "service": "test"
+            "stages": [
+                {
+                    "method": "Test.DownloadSnapshot",
+                    "service": "testDownload"
+                }
+            ]
         }
     },
     "services": {
         "test": {
+            "port": 9999
+        },
+        "testDownload": {
+            "path": "/snapshots/download",
             "port": 9999
         }
     }

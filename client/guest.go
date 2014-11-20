@@ -4,7 +4,6 @@ type (
 	// +gen * methods:"Where,Each,SortBy" containers:"Set"
 	Guest struct {
 		Id       string            `json:"id"`
-		Action   string            `json:"action"`
 		Type     string            `json:"type,omitempty"`
 		Nics     []Nic             `json:"nics,omitempty"`
 		Disks    []Disk            `json:"disks,omitempty"`

@@ -1,57 +1,52 @@
 package agent
 
 import (
-	"github.com/mistifyio/mistify-agent/client"
+	"errors"
+	"fmt"
+
 	"github.com/mistifyio/mistify-agent/rpc"
 )
 
-func (ctx *Context) getMetrics(guest *client.Guest, mtype string) (*rpc.GuestMetricsResponse, error) {
-	handler := ctx.Metrics[mtype]
-
-	req := rpc.GuestMetricsRequest{
-		Guest: guest,
-		Args:  handler.Args,
-		Type:  mtype,
-	}
-	var resp rpc.GuestMetricsResponse
-
-	err := handler.Service.Client.Do(handler.Method, &req, &resp)
-
+func getMetrics(r *HttpRequest, mtype string) *HttpErrorMessage {
+	action, err := r.Context.GetAction(fmt.Sprintf("%sMetrics", mtype))
 	if err != nil {
-		return nil, err
+		return r.NewError(err, 404)
 	}
 
-	return &resp, nil
+	// Metric requests are special in that they have Args that can vary by stage
+	// Create a unique request for each stage with the args
+	response := &rpc.GuestMetricsResponse{}
+	pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, nil)
+	for _, stage := range pipeline.Stages {
+		stage.Request = &rpc.GuestMetricsRequest{
+			Guest: r.Guest,
+			Args:  stage.Args,
+			Type:  mtype,
+		}
+	}
+	err = r.GuestRunner.Process(pipeline)
+	if err != nil {
+		return r.NewError(err, 500)
+	}
+	switch {
+	case mtype == "cpu":
+		return r.JSON(200, response.CPU)
+	case mtype == "nic":
+		return r.JSON(200, response.Nic)
+	case mtype == "disk":
+		return r.JSON(200, response.Disk)
+	}
+	return r.NewError(errors.New("Unknown metric"), 500)
 }
 
-func (ctx *Context) getCpuMetrics(guest *client.Guest) ([]*client.GuestCpuMetrics, error) {
-	resp, err := ctx.getMetrics(guest, "cpu")
-
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.CPU, nil
+func getCpuMetrics(r *HttpRequest) *HttpErrorMessage {
+	return getMetrics(r, "cpu")
 }
 
-func (ctx *Context) getNicMetrics(guest *client.Guest) (map[string]*client.GuestNicMetrics, error) {
-
-	resp, err := ctx.getMetrics(guest, "nic")
-
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Nic, nil
+func getNicMetrics(r *HttpRequest) *HttpErrorMessage {
+	return getMetrics(r, "nic")
 }
 
-func (ctx *Context) getDiskMetrics(guest *client.Guest) (map[string]*client.GuestDiskMetrics, error) {
-
-	resp, err := ctx.getMetrics(guest, "disk")
-
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Disk, nil
+func getDiskMetrics(r *HttpRequest) *HttpErrorMessage {
+	return getMetrics(r, "disk")
 }

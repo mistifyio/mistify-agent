@@ -2,8 +2,9 @@ package agent
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"sync"
-	"time"
 
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
@@ -19,32 +20,17 @@ type (
 		Actions  map[string]*Action
 		Services map[string]*Service
 
-		Runners     map[string]*GuestRunner
-		RunnerMutex sync.Mutex
-
-		// TODO: have a metrics method/channel
-		Metrics      map[string]*Stage
-		ImageActions map[string]*Stage
-	}
-
-	// GuestRunner represents a task runner for a single guest
-	GuestRunner struct {
-		Context *Context
-		ID      string
-		nudge   chan struct{} //this "nudges" the runner to run if it's in select
-		exit    chan struct{} //tells the runner to exit
-		wait    time.Duration //time to wait between runs
+		GuestRunners     map[string]*GuestRunner
+		GuestRunnerMutex sync.Mutex
 	}
 )
 
 // NewContext creates a new context. In general, there should only be one.
 func NewContext(cfg *config.Config) (*Context, error) {
 	ctx := &Context{
-		Config:       cfg,
-		Actions:      make(map[string]*Action),
-		Services:     make(map[string]*Service),
-		Metrics:      make(map[string]*Stage),
-		ImageActions: make(map[string]*Stage),
+		Config:   cfg,
+		Actions:  make(map[string]*Action),
+		Services: make(map[string]*Service),
 	}
 
 	db, err := kvite.Open(cfg.DBPath, "mistify_agent")
@@ -57,7 +43,7 @@ func NewContext(cfg *config.Config) (*Context, error) {
 	}
 
 	for name, service := range cfg.Services {
-		ctx.Services[name], err = ctx.NewService(name, service.Port, service.MaxPending)
+		ctx.Services[name], err = ctx.NewService(name, service.Port, service.Path, service.MaxPending)
 		if err != nil {
 			return nil, err
 		}
@@ -66,78 +52,41 @@ func NewContext(cfg *config.Config) (*Context, error) {
 	for name, cfgAction := range cfg.Actions {
 
 		action := &Action{
-			Name: name,
-			ctx:  ctx,
+			Name:   name,
+			Type:   cfgAction.Type,
+			Stages: make([]*Stage, len(cfgAction.Stages)),
 		}
 
-		stages := make([]*Stage, 0, len(cfgAction.Sync))
-		for _, stage := range cfgAction.Sync {
-			//log.Info(stage.Service)
-			//log.Info("%+v\n", ctx.Services[stage.Service])
-			stages = append(stages, &Stage{
-				Action:  name,
+		for i, stage := range cfgAction.Stages {
+			action.Stages[i] = &Stage{
 				Service: ctx.Services[stage.Service],
+				Type:    action.Type,
 				Method:  stage.Method,
 				Args:    stage.Args,
-			})
-		}
-
-		action.Sync, err = ctx.NewPipeline(stages, name)
-		if err != nil {
-			return nil, err
-		}
-
-		stages = make([]*Stage, 0, len(cfgAction.Async))
-		for _, stage := range cfgAction.Async {
-			stages = append(stages, &Stage{
-				Action:  name,
-				Service: ctx.Services[stage.Service],
-				Method:  stage.Method,
-				Args:    stage.Args,
-			})
-		}
-		action.Async, err = ctx.NewPipeline(stages, name)
-		log.Info("async stages: %s %+v", name, stages)
-		log.Info("async pipeline: %s %+v", name, action.Async)
-
-		if err != nil {
-			return nil, err
+			}
 		}
 
 		ctx.Actions[name] = action
 	}
 
-	for name, cfgMetric := range cfg.Metrics {
-		stage := &Stage{
-			Action:  name,
-			Service: ctx.Services[cfgMetric.Service],
-			Method:  cfgMetric.Method,
-			Args:    cfgMetric.Args,
-		}
-
-		ctx.Metrics[name] = stage
-	}
-
-	for name, cfgImageAction := range cfg.ImageActions {
-		stage := &Stage{
-			Action:  name,
-			Service: ctx.Services[cfgImageAction.Service],
-			Method:  cfgImageAction.Method,
-			Args:    cfgImageAction.Args,
-		}
-
-		ctx.ImageActions[name] = stage
-	}
-	ctx.Runners = make(map[string]*GuestRunner)
+	ctx.GuestRunners = make(map[string]*GuestRunner)
 
 	data, err := json.MarshalIndent(ctx, "   ", " ")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Info("%s\n", data)
+	log.Info("[Context] %s\n", data)
 
 	return ctx, nil
+}
+
+func (ctx *Context) GetAction(name string) (*Action, error) {
+	action, ok := ctx.Actions[name]
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("%s: Not configured", name))
+	}
+	return action, nil
 }
 
 // GetGuest fetches a single guest
@@ -164,88 +113,6 @@ func (ctx *Context) GetGuest(id string) (*client.Guest, error) {
 	return &g, nil
 }
 
-// RunAction executes the pipeline associated with the current guest action
-func (runner *GuestRunner) RunAction() {
-	log.Error("GuestRunner: %s start", runner.ID)
-
-	guest, err := runner.Context.GetGuest(runner.ID)
-	if err != nil {
-		log.Error("GuestRunner: %s => %s", runner.ID, err)
-		return
-	}
-
-	action := guest.Action
-	log.Info("%s: running %s", runner.ID, action)
-
-	guest, err = runner.Context.runAsyncAction(guest)
-	if err != nil {
-		// this error should get persisted to the guest somehow?
-		log.Error("GuestRunner: %s, %s", runner.ID, err)
-		return
-	}
-	//create and delete are special
-	// should we allow the stages to change action???
-	switch action {
-	case "create":
-		guest.Action = "run"
-		if err := runner.Context.PersistGuest(guest); err != nil {
-			// this error should get persisted to the guest somehow?
-			log.Error("GuestRunner: %s", runner.ID, err)
-		}
-		runner.Nudge()
-	case "delete":
-		if err := runner.Context.DeleteGuest(guest); err != nil {
-			log.Error("GuestRunner: %s", runner.ID, err)
-		}
-		runner.Exit()
-	}
-}
-
-// Run executes the guest loop
-func (runner *GuestRunner) Run() {
-LOOP:
-	for {
-		log.Info("run loop %s", runner.ID)
-
-		// TODO: be configurable
-		select {
-
-		case <-runner.exit:
-			log.Info("run loop time to die %s", runner.ID)
-			break LOOP
-
-			// TODO: have a way for stages/pipelines to set this and us set it back??
-		case <-time.After(runner.wait):
-			runner.RunAction()
-
-		case <-runner.nudge:
-			runner.RunAction()
-		}
-	}
-}
-
-// CreateGuestRunner creates a new runner for a guest
-func (ctx *Context) CreateGuestRunner(guest *client.Guest) (*GuestRunner, error) {
-	ctx.RunnerMutex.Lock()
-	defer ctx.RunnerMutex.Unlock()
-
-	runner := &GuestRunner{
-		Context: ctx,
-		ID:      guest.Id,
-		// what should the buffering be here?
-		nudge: make(chan struct{}, 4),
-		exit:  make(chan struct{}, 1),
-		// configurable?
-		wait: 5 * time.Second,
-	}
-
-	ctx.Runners[guest.Id] = runner
-	log.Info("starting %s, %s", guest.Id, guest.Action)
-	go runner.Run()
-
-	return runner, nil
-}
-
 // RunGuests creates and runs helpers for each defined guest. In general, this should only be called early in a process
 // There is no locking provided.
 func (ctx *Context) RunGuests() error {
@@ -260,29 +127,8 @@ func (ctx *Context) RunGuests() error {
 				// should this be fatal if it just fails on one guest??
 				return err
 			}
-			_, err := ctx.CreateGuestRunner(&guest)
-			if err != nil {
-				return err
-			}
+			ctx.NewGuestRunner(guest.Id, 100, 5)
 			return nil
 		})
 	})
-}
-
-func (runner *GuestRunner) Exit() {
-	runner.exit <- struct{}{}
-}
-
-func (runner *GuestRunner) Nudge() {
-	runner.nudge <- struct{}{}
-}
-
-func (ctx *Context) NudgeGuest(id string) {
-	ctx.RunnerMutex.Lock()
-	defer ctx.RunnerMutex.Unlock()
-
-	runner := ctx.Runners[id]
-	if runner != nil {
-		runner.Nudge()
-	}
 }

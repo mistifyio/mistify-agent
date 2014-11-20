@@ -121,7 +121,7 @@ func (t *Test) ListImages(r *http.Request, request *rpc.ImageRequest, response *
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
 			&rpc.Image{
-				Id:       filepath.Join("mistify", "images", "foo"),
+				Id:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
 				Size:     1024,
@@ -136,7 +136,7 @@ func (t *Test) GetImage(r *http.Request, request *rpc.ImageRequest, response *rp
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
 			&rpc.Image{
-				Id:       filepath.Join("mistify", "images", request.Id),
+				Id:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
 				Size:     1024,
@@ -151,7 +151,7 @@ func (t *Test) DeleteImage(r *http.Request, request *rpc.ImageRequest, response 
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
 			&rpc.Image{
-				Id:       filepath.Join("mistify", "images", request.Id),
+				Id:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
 				Size:     1024,
@@ -166,7 +166,7 @@ func (t *Test) RequestImage(r *http.Request, request *rpc.ImageRequest, response
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
 			&rpc.Image{
-				Id:       filepath.Join("mistify", "images", "foo"),
+				Id:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
 				Size:     1024,
