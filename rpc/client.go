@@ -66,12 +66,11 @@ func (c *Client) DoRaw(method string, request interface{}, rw http.ResponseWrite
 		buf.ReadFrom(resp.Body)
 		http.Error(rw, buf.String(), resp.StatusCode)
 		return
-	} else {
-		rw.Header().Set("Content-Type", "application/octet-stream")
-		_, err = io.Copy(rw, resp.Body)
-		if err != nil {
-			http.Error(rw, err.Error(), 500)
-		}
-		return
 	}
+	rw.Header().Set("Content-Type", "application/octet-stream")
+	_, err = io.Copy(rw, resp.Body)
+	if err != nil {
+		http.Error(rw, err.Error(), 500)
+	}
+	return
 }
