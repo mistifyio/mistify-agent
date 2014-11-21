@@ -17,6 +17,7 @@ func getMetrics(r *HttpRequest, mtype string) *HttpErrorMessage {
 	// Create a unique request for each stage with the args
 	response := &rpc.GuestMetricsResponse{}
 	pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	for _, stage := range pipeline.Stages {
 		stage.Request = &rpc.GuestMetricsRequest{
 			Guest: r.Guest,

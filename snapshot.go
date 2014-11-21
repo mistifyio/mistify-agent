@@ -37,6 +37,7 @@ func listSnapshots(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 404)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = r.GuestRunner.Process(pipeline)
 	if err != nil {
 		return getHttpError(r, err)
@@ -52,6 +53,7 @@ func getSnapshot(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 404)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = r.GuestRunner.Process(pipeline)
 	if err != nil {
 		return getHttpError(r, err)
@@ -76,6 +78,7 @@ func createSnapshot(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 404)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = r.GuestRunner.Process(pipeline)
 	if err != nil {
 		return getHttpError(r, err)
@@ -94,6 +97,7 @@ func deleteSnapshot(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 404)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = r.GuestRunner.Process(pipeline)
 	if err != nil {
 		return getHttpError(r, err)
@@ -114,6 +118,7 @@ func rollbackSnapshot(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 404)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = r.GuestRunner.Process(pipeline)
 	if err != nil {
 		return getHttpError(r, err)
@@ -133,6 +138,7 @@ func downloadSnapshot(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 404)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	// Streaming handles sending its own error responses
 	r.GuestRunner.Process(pipeline)
 

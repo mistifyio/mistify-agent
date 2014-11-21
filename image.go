@@ -14,6 +14,7 @@ func listImages(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 404)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = pipeline.Run()
 	if err != nil {
 		return r.NewError(err, 500)
@@ -31,6 +32,7 @@ func getImage(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 404)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = pipeline.Run()
 	if err != nil {
 		return r.NewError(err, 500)
@@ -53,6 +55,7 @@ func deleteImage(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 404)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = pipeline.Run()
 	// how to check for not found??
 	if err != nil {
@@ -73,6 +76,7 @@ func fetchImage(r *HttpRequest) *HttpErrorMessage {
 		return r.NewError(err, 404)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = pipeline.Run()
 	if err != nil {
 		return r.NewError(err, 500)
