@@ -62,7 +62,7 @@ func deleteImage(r *HttpRequest) *HttpErrorMessage {
 }
 
 func fetchImage(r *HttpRequest) *HttpErrorMessage {
-	var request *rpc.ImageRequest
+	request := &rpc.ImageRequest{}
 	err := json.NewDecoder(r.Request.Body).Decode(request)
 	if err != nil {
 		return r.NewError(err, 400)
