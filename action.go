@@ -4,12 +4,13 @@ import (
 	"net/http"
 
 	"code.google.com/p/go-uuid/uuid"
+	"github.com/mistifyio/mistify-agent/config"
 )
 
 type (
 	Stage struct {
 		Service  *Service
-		Type     string
+		Type     config.ActionType
 		Method   string
 		Args     map[string]string
 		Request  interface{}
@@ -19,21 +20,21 @@ type (
 
 	Pipeline struct {
 		ID       string
-		Type     string
+		Type     config.ActionType
 		Stages   []*Stage
 		DoneChan chan error // Signal async is done or errored, for post-hooks
 	}
 
 	Action struct {
 		Name   string
-		Type   string
+		Type   config.ActionType
 		Stages []*Stage
 	}
 )
 
 // Run makes an individual stage request
 func (stage *Stage) Run() error {
-	if stage.Type == "stream" {
+	if stage.Type == config.StreamAction {
 		stage.Service.Client.DoRaw(stage.Method, stage.Request, stage.RW)
 		return nil
 	} else {

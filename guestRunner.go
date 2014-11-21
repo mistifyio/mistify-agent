@@ -3,6 +3,7 @@ package agent
 import (
 	"errors"
 
+	"github.com/mistifyio/mistify-agent/config"
 	"github.com/mistifyio/mistify-agent/log"
 )
 
@@ -88,16 +89,16 @@ func (gr *GuestRunner) Quit() {
 }
 
 func (gr *GuestRunner) Process(pipeline *Pipeline) error {
-	switch {
-	case pipeline.Type == "info":
+	switch pipeline.Type {
+	case config.InfoAction:
 		if err := gr.Info.Process(pipeline); err != nil {
 			return err
 		}
-	case pipeline.Type == "stream":
+	case config.StreamAction:
 		if err := gr.Stream.Process(pipeline); err != nil {
 			return err
 		}
-	case pipeline.Type == "async":
+	case config.AsyncAction:
 		LogRunnerInfo(gr.GuestID, "async", "", "Queued")
 		gr.Async.Enqueue(pipeline)
 		return nil

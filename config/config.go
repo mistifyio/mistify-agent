@@ -7,6 +7,8 @@ import (
 )
 
 type (
+	ActionType int
+
 	Service struct {
 		MaxPending uint   `json:"max_pending"`
 		Port       uint   `json:"port"`
@@ -20,7 +22,7 @@ type (
 	}
 
 	Action struct {
-		Type   string
+		Type   ActionType
 		Stages []Stage `json:"stages"`
 	}
 
@@ -31,29 +33,35 @@ type (
 	}
 )
 
+const (
+	InfoAction ActionType = iota
+	StreamAction
+	AsyncAction
+)
+
 var (
 	// Valid actions and their associated type
-	valid_actions map[string]string = map[string]string{
-		"create":           "async",
-		"delete":           "async",
-		"reboot":           "async",
-		"restart":          "async",
-		"poweroff":         "async",
-		"shutdown":         "async",
-		"run":              "async",
-		"cpuMetrics":       "info",
-		"nicMetrics":       "info",
-		"diskMetrics":      "info",
-		"listImages":       "info",
-		"getImage":         "info",
-		"deleteImage":      "async",
-		"fetchImage":       "async",
-		"listSnapshots":    "info",
-		"getSnapshot":      "info",
-		"createSnapshot":   "async",
-		"deleteSnapshot":   "async",
-		"rollbackSnapshot": "async",
-		"downloadSnapshot": "stream",
+	valid_actions map[string]ActionType = map[string]ActionType{
+		"create":           AsyncAction,
+		"delete":           AsyncAction,
+		"reboot":           AsyncAction,
+		"restart":          AsyncAction,
+		"poweroff":         AsyncAction,
+		"shutdown":         AsyncAction,
+		"run":              AsyncAction,
+		"cpuMetrics":       InfoAction,
+		"nicMetrics":       InfoAction,
+		"diskMetrics":      InfoAction,
+		"listImages":       InfoAction,
+		"getImage":         InfoAction,
+		"deleteImage":      AsyncAction,
+		"fetchImage":       AsyncAction,
+		"listSnapshots":    InfoAction,
+		"getSnapshot":      InfoAction,
+		"createSnapshot":   AsyncAction,
+		"deleteSnapshot":   AsyncAction,
+		"rollbackSnapshot": AsyncAction,
+		"downloadSnapshot": StreamAction,
 	}
 )
 
