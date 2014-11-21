@@ -50,6 +50,7 @@ func (ctx *Context) DeleteGuest(g *client.Guest) error {
 		return err
 	}
 	ctx.DeleteGuestRunner(g.Id)
+	ctx.DeleteGuestJobLog(g.Id)
 	return nil
 }
 
@@ -110,6 +111,7 @@ func createGuest(r *HttpRequest) *HttpErrorMessage {
 	}
 
 	runner := r.Context.NewGuestRunner(g.Id, 100, 5)
+	r.Context.CreateGuestJobLog(g.Id)
 
 	response := &rpc.GuestResponse{}
 	pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, nil)

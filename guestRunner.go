@@ -27,6 +27,7 @@ type (
 	PipelineQueue struct {
 		GuestID      string
 		Name         string
+		Context      *Context
 		PipelineChan chan *Pipeline
 		QuitChan     chan struct{}
 	}
@@ -49,7 +50,7 @@ func (context *Context) NewGuestRunner(guestID string, maxInfo uint, maxStream u
 		GuestID: guestID,
 		Info:    NewSyncThrottle("info", guestID, maxInfo),
 		Stream:  NewSyncThrottle("stream", guestID, maxStream),
-		Async:   NewPipelineQueue("async", guestID),
+		Async:   NewPipelineQueue("async", guestID, context),
 	}
 
 	runner.Async.Process()
@@ -136,18 +137,20 @@ func (st *SyncThrottle) Release() {
 	return
 }
 
-func NewPipelineQueue(name string, guestID string) *PipelineQueue {
+func NewPipelineQueue(name string, guestID string, context *Context) *PipelineQueue {
 	max := 100
 	pq := &PipelineQueue{
 		Name:         name,
 		GuestID:      guestID,
 		PipelineChan: make(chan *Pipeline, max),
 		QuitChan:     make(chan struct{}),
+		Context:      context,
 	}
 	return pq
 }
 
 func (pq *PipelineQueue) Enqueue(pipeline *Pipeline) {
+	pq.Context.GuestJobLogs[pq.GuestID].AddJob(pipeline.ID, pipeline.Action)
 	pq.PipelineChan <- pipeline
 	return
 }
@@ -160,10 +163,13 @@ func (pq *PipelineQueue) Process() {
 				LogRunnerInfo(pq.GuestID, pq.Name, "", "Quitting")
 				return
 			case pipeline := <-pq.PipelineChan:
+				pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Running, "")
 				err := pipeline.Run()
 				if err != nil {
+					pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Errored, err.Error())
 					LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
 				} else {
+					pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Complete, "")
 					LogRunnerInfo(pq.GuestID, pq.Name, pipeline.ID, "Success")
 				}
 			}

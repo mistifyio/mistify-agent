@@ -20,6 +20,7 @@ type (
 
 	Pipeline struct {
 		ID       string
+		Action   string
 		Type     config.ActionType
 		Stages   []*Stage
 		DoneChan chan error // Signal async is done or errored, for post-hooks
@@ -66,6 +67,7 @@ func (pipeline *Pipeline) Run() error {
 func (action *Action) GeneratePipeline(request interface{}, response interface{}, rw http.ResponseWriter, done chan error) *Pipeline {
 	pipeline := &Pipeline{
 		ID:       uuid.New(),
+		Action:   action.Name,
 		Type:     action.Type,
 		Stages:   make([]*Stage, len(action.Stages)),
 		DoneChan: done,

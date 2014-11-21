@@ -91,6 +91,8 @@ func Run(ctx *Context, address string) error {
 	// Specific Guest
 	r.HandleFunc("/guests", chain.RequestWrapper(createGuest)).Methods("POST") // Special setup
 	r.HandleFunc("/guests/{id}", chain.GuestRunnerWrapper(getGuest)).Methods("GET")
+	r.HandleFunc("/guests/{id}/jobs", chain.GuestRunnerWrapper(getLatestJobs)).Queries("limit", "{limit:[0-9]+}").Methods("GET")
+	r.HandleFunc("/guests/{id}/jobs", chain.GuestRunnerWrapper(getLatestJobs)).Methods("GET")
 	//r.HandleFunc("/guests/{id}", chain.GuestRunnerWrapper(deleteGuest)).Methods("DELETE")
 	r.HandleFunc("/guests/{id}/metadata", chain.GuestRunnerWrapper(getGuestMetadata)).Methods("GET")
 	r.HandleFunc("/guests/{id}/metadata", chain.GuestRunnerWrapper(setGuestMetadata)).Methods("PATCH")

@@ -22,6 +22,7 @@ type (
 
 		GuestRunners     map[string]*GuestRunner
 		GuestRunnerMutex sync.Mutex
+		GuestJobLogs     map[string]*GuestJobLog
 	}
 )
 
@@ -70,6 +71,7 @@ func NewContext(cfg *config.Config) (*Context, error) {
 	}
 
 	ctx.GuestRunners = make(map[string]*GuestRunner)
+	ctx.GuestJobLogs = make(map[string]*GuestJobLog)
 
 	data, err := json.MarshalIndent(ctx, "   ", " ")
 	if err != nil {
@@ -128,6 +130,7 @@ func (ctx *Context) RunGuests() error {
 				return err
 			}
 			ctx.NewGuestRunner(guest.Id, 100, 5)
+			ctx.CreateGuestJobLog(guest.Id)
 			return nil
 		})
 	})
