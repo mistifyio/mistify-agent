@@ -8,6 +8,8 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
+	"github.com/mistifyio/mistify-agent/log"
+	"github.com/mistifyio/mistify-agent/rpc"
 )
 
 type (
@@ -47,9 +49,8 @@ func (ctx *Context) DeleteGuest(g *client.Guest) error {
 	if err != nil {
 		return err
 	}
-	ctx.RunnerMutex.Lock()
-	defer ctx.RunnerMutex.Unlock()
-	delete(ctx.Runners, g.Id)
+	ctx.DeleteGuestRunner(g.Id)
+	ctx.DeleteGuestJobLog(g.Id)
 	return nil
 }
 
@@ -79,33 +80,19 @@ func listGuests(r *HttpRequest) *HttpErrorMessage {
 	return r.JSON(200, guests)
 }
 
-func (ctx *Context) runSyncAction(guest *client.Guest) (*client.Guest, error) {
-	action, ok := ctx.Actions[guest.Action]
-	if !ok {
-		return nil, fmt.Errorf("unknown action: %s", guest.Action)
-	}
-
-	g, err := action.Sync.Run(guest)
-	if err != nil {
-		return nil, err
-	}
-	ctx.NudgeGuest(g.Id)
-	return g, nil
-}
-
-// XXX: all the sync/async initialization and running seems redundant
-func (ctx *Context) runAsyncAction(guest *client.Guest) (*client.Guest, error) {
-	action, ok := ctx.Actions[guest.Action]
-	if !ok {
-		return nil, fmt.Errorf("unknown action: %s", guest.Action)
-	}
-	return action.Async.Run(guest)
-
-}
-
+// TODO: A lot of the duplicated code between here and the guest action wrapper
+// will go away when we fix our middlewares. The initial setup here can be a
+// simple middleware called first before the guest and runner retrieval
+// middlewares
+// NOTE: The config for create should include stages for startup
 func createGuest(r *HttpRequest) *HttpErrorMessage {
-	var g client.Guest
-	err := json.NewDecoder(r.Request.Body).Decode(&g)
+	action, err := r.Context.GetAction("create")
+	if err != nil {
+		return r.NewError(err, 404)
+	}
+
+	g := &client.Guest{}
+	err = json.NewDecoder(r.Request.Body).Decode(g)
 	if err != nil {
 		return r.NewError(err, 400)
 	}
@@ -116,29 +103,35 @@ func createGuest(r *HttpRequest) *HttpErrorMessage {
 
 	// TODO: make sure it's actually unique
 	g.State = "create"
-	g.Action = "create"
 
 	// TODO: general validations, like memory, disks look sane, etc
 
-	guest, err := r.Context.runSyncAction(&g)
+	if err := r.Context.PersistGuest(g); err != nil {
+		return r.NewError(err, 500)
+	}
+
+	runner := r.Context.NewGuestRunner(g.Id, 100, 5)
+	r.Context.CreateGuestJobLog(g.Id)
+
+	response := &rpc.GuestResponse{}
+	pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, nil)
+	// Guest requests are special in that they have Args and need
+	// the action name, so fold them in to the request
+	for _, stage := range pipeline.Stages {
+		stage.Request = &rpc.GuestRequest{
+			Guest:  g,
+			Args:   stage.Args,
+			Action: action.Name,
+		}
+	}
+	err = runner.Process(pipeline)
 	if err != nil {
 		return r.NewError(err, 500)
 	}
-
-	if err := r.Context.PersistGuest(guest); err != nil {
-		return r.NewError(err, 500)
-	}
-
-	runner, err := r.Context.CreateGuestRunner(guest)
-	if err != nil {
-		return r.NewError(err, 500)
-	}
-
-	runner.Nudge()
-	return r.JSON(202, guest)
+	return r.JSON(202, g)
 }
 
-func withGuest(r *HttpRequest, fn func(g *client.Guest) *HttpErrorMessage) *HttpErrorMessage {
+func withGuest(r *HttpRequest, fn func(r *HttpRequest) *HttpErrorMessage) *HttpErrorMessage {
 	id := r.Parameter("id")
 	var g client.Guest
 	err := r.Context.db.Transaction(func(tx *kvite.Tx) error {
@@ -164,18 +157,25 @@ func withGuest(r *HttpRequest, fn func(g *client.Guest) *HttpErrorMessage) *Http
 		}
 		return r.NewError(err, code)
 	}
-	return fn(&g)
+	r.Guest = &g
+	r.GuestRunner, err = r.Context.GetGuestRunner(g.Id)
+	if err != nil {
+		return r.NewError(err, 500)
+	}
+	return fn(r)
 }
 
 func getGuest(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
+	return withGuest(r, func(r *HttpRequest) *HttpErrorMessage {
+		g := r.Guest
 		return r.JSON(200, g)
 	})
 }
 
 func deleteGuest(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-		g.Action = "delete"
+	return withGuest(r, func(r *HttpRequest) *HttpErrorMessage {
+		g := r.Guest
+		// TODO: Make sure to use the DoneChan here
 		err := r.Context.PersistGuest(g)
 		if err != nil {
 			return r.NewError(err, 500)
@@ -185,13 +185,15 @@ func deleteGuest(r *HttpRequest) *HttpErrorMessage {
 }
 
 func getGuestMetadata(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
+	return withGuest(r, func(r *HttpRequest) *HttpErrorMessage {
+		g := r.Guest
 		return r.JSON(200, g.Metadata)
 	})
 }
 
 func setGuestMetadata(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
+	return withGuest(r, func(r *HttpRequest) *HttpErrorMessage {
+		g := r.Guest
 		var metadata map[string]string
 		err := json.NewDecoder(r.Request.Body).Decode(&metadata)
 		if err != nil {
@@ -214,51 +216,64 @@ func setGuestMetadata(r *HttpRequest) *HttpErrorMessage {
 	})
 }
 
-func (ctx *Context) switchToRunning(guest *client.Guest) error {
-	guest.Action = "run"
-	return ctx.PersistGuest(guest)
-}
-
-// GuestActionWrapper wraps an HTTP request with a Guest action to avoid duplicated code
-func (c *Chain) GuestActionWrapper(action string) http.HandlerFunc {
+// TODO: These wrappers are ugly nesting. Try to find a cleaner, more modular
+// way to do it
+func (c *Chain) GuestRunnerWrapper(fn func(*HttpRequest) *HttpErrorMessage) http.HandlerFunc {
 	return c.RequestWrapper(func(r *HttpRequest) *HttpErrorMessage {
-		return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-			g.Action = action
-			guest, err := r.Context.runSyncAction(g)
+		return withGuest(r, func(r *HttpRequest) *HttpErrorMessage {
+			g := r.Guest
+			runner, err := r.Context.GetGuestRunner(g.Id)
 			if err != nil {
 				return r.NewError(err, 500)
 			}
-			return r.JSON(202, guest)
+
+			r.GuestRunner = runner
+			return fn(r)
 		})
 	})
 }
 
-func getGuestCPUMetrics(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-		metrics, err := r.Context.getCpuMetrics(g)
-		if err != nil {
-			return r.NewError(err, 500)
-		}
-		return r.JSON(200, metrics)
-	})
-}
+// GuestActionWrapper wraps an HTTP request with a Guest action to avoid duplicated code
+func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
+	return c.GuestRunnerWrapper(func(r *HttpRequest) *HttpErrorMessage {
+		g := r.Guest
+		runner := r.GuestRunner
 
-func getGuestNicMetrics(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-		metrics, err := r.Context.getNicMetrics(g)
+		action, err := r.Context.GetAction(actionName)
 		if err != nil {
-			return r.NewError(err, 500)
+			return r.NewError(err, 404)
 		}
-		return r.JSON(200, metrics)
-	})
-}
 
-func getGuestDiskMetrics(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(g *client.Guest) *HttpErrorMessage {
-		metrics, err := r.Context.getDiskMetrics(g)
+		response := &rpc.GuestResponse{}
+		doneChan := make(chan error)
+		pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, doneChan)
+		// Guest requests are special in that they have Args and need
+		// the action name, so fold them in to the request
+		for _, stage := range pipeline.Stages {
+			stage.Request = &rpc.GuestRequest{
+				Guest:  g,
+				Args:   stage.Args,
+				Action: action.Name,
+			}
+		}
+		err = runner.Process(pipeline)
 		if err != nil {
 			return r.NewError(err, 500)
 		}
-		return r.JSON(200, metrics)
+		// Extra processing after the pipeline finishes
+		go func() {
+			err := <-doneChan
+			if err != nil {
+				return
+			}
+			if actionName == "delete" {
+				if err := r.Context.DeleteGuest(g); err != nil {
+					log.Error("Guest:", g.Id, "Delete Error:", err)
+				}
+				return
+			}
+			r.Context.PersistGuest(g)
+		}()
+		return r.JSON(202, g)
 	})
 }

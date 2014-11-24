@@ -7,9 +7,15 @@ import (
 )
 
 func listImages(r *HttpRequest) *HttpErrorMessage {
-	response := rpc.ImageResponse{}
-	handler := r.Context.ImageActions["listImages"]
-	err := handler.Service.Client.Do(handler.Method, &rpc.ImageRequest{}, &response)
+	response := &rpc.ImageResponse{}
+	request := &rpc.ImageRequest{}
+	action, err := r.Context.GetAction("listImages")
+	if err != nil {
+		return r.NewError(err, 404)
+	}
+	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
+	err = pipeline.Run()
 	if err != nil {
 		return r.NewError(err, 500)
 	}
@@ -17,9 +23,17 @@ func listImages(r *HttpRequest) *HttpErrorMessage {
 }
 
 func getImage(r *HttpRequest) *HttpErrorMessage {
-	response := rpc.ImageResponse{}
-	handler := r.Context.ImageActions["getImage"]
-	err := handler.Service.Client.Do(handler.Method, &rpc.ImageRequest{Id: r.Parameter("id")}, &response)
+	response := &rpc.ImageResponse{}
+	request := &rpc.ImageRequest{
+		Id: r.Parameter("id"),
+	}
+	action, err := r.Context.GetAction("getImage")
+	if err != nil {
+		return r.NewError(err, 404)
+	}
+	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
+	err = pipeline.Run()
 	if err != nil {
 		return r.NewError(err, 500)
 	}
@@ -32,9 +46,17 @@ func getImage(r *HttpRequest) *HttpErrorMessage {
 }
 
 func deleteImage(r *HttpRequest) *HttpErrorMessage {
-	response := rpc.ImageResponse{}
-	handler := r.Context.ImageActions["deleteImage"]
-	err := handler.Service.Client.Do(handler.Method, &rpc.ImageRequest{Id: r.Parameter("id")}, &response)
+	response := &rpc.ImageResponse{}
+	request := &rpc.ImageRequest{
+		Id: r.Parameter("id"),
+	}
+	action, err := r.Context.GetAction("deleteImage")
+	if err != nil {
+		return r.NewError(err, 404)
+	}
+	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
+	err = pipeline.Run()
 	// how to check for not found??
 	if err != nil {
 		return r.NewError(err, 500)
@@ -43,14 +65,19 @@ func deleteImage(r *HttpRequest) *HttpErrorMessage {
 }
 
 func fetchImage(r *HttpRequest) *HttpErrorMessage {
-	var req rpc.ImageRequest
-	err := json.NewDecoder(r.Request.Body).Decode(&req)
+	request := &rpc.ImageRequest{}
+	err := json.NewDecoder(r.Request.Body).Decode(request)
 	if err != nil {
 		return r.NewError(err, 400)
 	}
-	response := rpc.ImageResponse{}
-	handler := r.Context.ImageActions["fetchImage"]
-	err = handler.Service.Client.Do(handler.Method, &req, &response)
+	response := &rpc.ImageResponse{}
+	action, err := r.Context.GetAction("fetchImage")
+	if err != nil {
+		return r.NewError(err, 404)
+	}
+	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
+	err = pipeline.Run()
 	if err != nil {
 		return r.NewError(err, 500)
 	}

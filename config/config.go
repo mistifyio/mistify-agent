@@ -7,9 +7,12 @@ import (
 )
 
 type (
+	ActionType int
+
 	Service struct {
-		MaxPending uint `json:"max_pending"`
-		Port       uint `json:"port"`
+		MaxPending uint   `json:"max_pending"`
+		Port       uint   `json:"port"`
+		Path       string `json:"path"`
 	}
 
 	Stage struct {
@@ -19,68 +22,60 @@ type (
 	}
 
 	Action struct {
-		Sync  []Stage `json:"sync"`
-		Async []Stage `json:"async"`
+		Type   ActionType
+		Stages []Stage `json:"stages"`
 	}
 
 	Config struct {
-		Actions      map[string]Action  `json:"actions"`
-		Services     map[string]Service `json:"services"`
-		Metrics      map[string]Stage   `json:"metrics"`
-		ImageActions map[string]Stage   `json:"imageActions"`
-		DBPath       string             `json:"dbpath"`
+		Actions  map[string]Action  `json:"actions"`
+		Services map[string]Service `json:"services"`
+		DBPath   string             `json:"dbpath"`
 	}
 )
 
+const (
+	InfoAction ActionType = iota
+	StreamAction
+	AsyncAction
+)
+
 var (
-	valid_actions map[string]bool = map[string]bool{
-		"create":   true,
-		"delete":   true,
-		"reboot":   true,
-		"restart":  true,
-		"poweroff": true,
-		"shutdown": true,
-		"run":      true,
-	}
-
-	valid_metrics map[string]bool = map[string]bool{
-		"cpu":  true,
-		"nic":  true,
-		"disk": true,
-	}
-
-	valid_image_actions map[string]bool = map[string]bool{
-		"listImages":       true,
-		"getImage":         true,
-		"deleteImage":      true,
-		"fetchImage":       true,
-		"listSnapshots":    true,
-		"getSnapshot":      true,
-		"createSnapshot":   true,
-		"deleteSnapshot":   true,
-		"rollbackSnapshot": true,
-		"downloadSnapshot": true,
+	// Valid actions and their associated type
+	valid_actions map[string]ActionType = map[string]ActionType{
+		"create":           AsyncAction,
+		"delete":           AsyncAction,
+		"reboot":           AsyncAction,
+		"restart":          AsyncAction,
+		"poweroff":         AsyncAction,
+		"shutdown":         AsyncAction,
+		"run":              AsyncAction,
+		"cpuMetrics":       InfoAction,
+		"nicMetrics":       InfoAction,
+		"diskMetrics":      InfoAction,
+		"listImages":       InfoAction,
+		"getImage":         InfoAction,
+		"deleteImage":      AsyncAction,
+		"fetchImage":       AsyncAction,
+		"listSnapshots":    InfoAction,
+		"getSnapshot":      InfoAction,
+		"createSnapshot":   AsyncAction,
+		"deleteSnapshot":   AsyncAction,
+		"rollbackSnapshot": AsyncAction,
+		"downloadSnapshot": StreamAction,
 	}
 )
 
 func NewConfig() *Config {
 	c := &Config{
-		Actions:      make(map[string]Action),
-		Services:     make(map[string]Service),
-		Metrics:      make(map[string]Stage),
-		ImageActions: make(map[string]Stage),
-		DBPath:       "/tmp/mistify-agent.db",
+		Actions:  make(map[string]Action),
+		Services: make(map[string]Service),
+		DBPath:   "/tmp/mistify-agent.db",
 	}
 
-	/*
-		for name, _ := range valid_actions {
-			c.addAction(name)
-		}
-	*/
 	return c
 }
 
-func validateStage(stage *Stage, prefix string) error {
+func (stage *Stage) validate(prefix string) error {
 	if stage == nil {
 		return nil
 	}
@@ -128,97 +123,22 @@ func (c *Config) AddConfig(path string) error {
 			return fmt.Errorf("action %s is not a valid action", name)
 		}
 
-		if action.Sync == nil {
-			action.Sync = make([]Stage, 0)
-		}
-
-		for _, s := range action.Sync {
-			if err := validateStage(&s, name+" sync"); err != nil {
-				return err
-			}
-		}
-		if action.Async == nil {
-			action.Async = make([]Stage, 0)
-		}
-		for _, s := range action.Async {
-			if err := validateStage(&s, name+" async"); err != nil {
+		for _, s := range action.Stages {
+			if err := s.validate(name); err != nil {
 				return err
 			}
 		}
 
+		action.Type = valid_actions[name]
 		c.Actions[name] = action
-	}
-
-	for name, metric := range newConfig.Metrics {
-		if _, ok := c.Metrics[name]; ok {
-			return fmt.Errorf("metric %s has already been defined", name)
-		}
-		if _, ok := valid_metrics[name]; !ok {
-			return fmt.Errorf("metric %s is not a valid metric", name)
-		}
-
-		if err := validateStage(&metric, name+" metric"); err != nil {
-			return err
-		}
-
-		c.Metrics[name] = metric
-	}
-
-	for name, imageAction := range newConfig.ImageActions {
-		if _, ok := c.ImageActions[name]; ok {
-			return fmt.Errorf("image action %s has already been defined", name)
-		}
-		if _, ok := valid_image_actions[name]; !ok {
-			return fmt.Errorf("image action %s is not a valid image action", name)
-		}
-
-		if err := validateStage(&imageAction, name+" image action"); err != nil {
-			return err
-		}
-
-		c.ImageActions[name] = imageAction
 	}
 
 	return nil
 }
 
 func (c *Config) Fixup() error {
-	/*
-		for _, service := range c.Services {
-			 anything to do here?
-		}
-	*/
-
-	for name, _ := range valid_actions {
-		action, ok := c.Actions[name]
-		if !ok {
-			return fmt.Errorf("nothing defined for action %s", name)
-		}
-		if len(action.Sync) == 0 && len(action.Async) == 0 {
-			return fmt.Errorf("no pipelines defined for action %s", name)
-		}
-		/*
-			c.Actions[name] = Action{
-				Sync:  make([]Stage, 0),
-				Async: make([]Stage, 0),
-			}
-		*/
-		//}
-
-	}
 	for name, action := range c.Actions {
-		for j, _ := range action.Sync {
-			stage := &action.Sync[j]
-			if _, ok := c.Services[stage.Service]; !ok {
-				return fmt.Errorf("%s unable to find service %s", name, stage.Service)
-			}
-			if stage.Args == nil {
-				stage.Args = make(map[string]string)
-			}
-		}
-
-		for j, _ := range action.Async {
-			stage := &action.Async[j]
+		for _, stage := range action.Stages {
 			if _, ok := c.Services[stage.Service]; !ok {
 				return fmt.Errorf("%s unable to find service %s", name, stage.Service)
 			}
@@ -230,40 +150,5 @@ func (c *Config) Fixup() error {
 
 	// TODO: add builtins for create and delete
 
-	for name, _ := range valid_metrics {
-		_, ok := c.Metrics[name]
-		if !ok {
-			return fmt.Errorf("nothing defined for metric %s", name)
-		}
-	}
-
-	for name, metric := range c.Metrics {
-		if _, ok := c.Services[metric.Service]; !ok {
-			return fmt.Errorf("%s unable to find service %s", name, metric.Service)
-		}
-		if metric.Args == nil {
-			metric.Args = make(map[string]string)
-		}
-		c.Metrics[name] = metric
-	}
-
-	for name, _ := range valid_image_actions {
-		_, ok := c.ImageActions[name]
-		if !ok {
-			return fmt.Errorf("nothing defined for image action %s", name)
-		}
-	}
-
-	for name, imageAction := range c.ImageActions {
-		if _, ok := c.Services[imageAction.Service]; !ok {
-			return fmt.Errorf("%s unable to find service %s", name, imageAction.Service)
-		}
-		if imageAction.Args == nil {
-			imageAction.Args = make(map[string]string)
-		}
-		c.ImageActions[name] = imageAction
-	}
-
 	return nil
-
 }

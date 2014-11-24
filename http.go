@@ -6,12 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bakins/net-http-recover"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	"github.com/justinas/alice"
-	"github.com/mistifyio/kvite"
-	"github.com/mistifyio/mistify-agent/log"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -19,6 +13,14 @@ import (
 	runtime_pprof "runtime/pprof"
 	"strings"
 	"time"
+
+	"github.com/bakins/net-http-recover"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/justinas/alice"
+	"github.com/mistifyio/kvite"
+	"github.com/mistifyio/mistify-agent/client"
+	"github.com/mistifyio/mistify-agent/log"
 )
 
 type (
@@ -27,6 +29,8 @@ type (
 		Request        *http.Request
 		Context        *Context
 		vars           map[string]string
+		Guest          *client.Guest
+		GuestRunner    *GuestRunner
 	}
 
 	HttpErrorMessage struct {
@@ -73,37 +77,42 @@ func Run(ctx *Context, address string) error {
 			}),
 	}
 
+	// General
 	r.HandleFunc("/metadata", chain.RequestWrapper(getMetadata)).Methods("GET")
 	r.HandleFunc("/metadata", chain.RequestWrapper(setMetadata)).Methods("PATCH")
 
+	r.HandleFunc("/images", chain.RequestWrapper(listImages)).Methods("GET")
+	r.HandleFunc("/images", chain.RequestWrapper(fetchImage)).Methods("POST")
+	r.HandleFunc("/images/{id}", chain.RequestWrapper(getImage)).Methods("GET")
+	r.HandleFunc("/images/{id}", chain.RequestWrapper(deleteImage)).Methods("DELETE")
+
 	r.HandleFunc("/guests", chain.RequestWrapper(listGuests)).Methods("GET")
-	r.HandleFunc("/guests", chain.RequestWrapper(createGuest)).Methods("POST")
 
-	r.HandleFunc("/guests/{id}", chain.RequestWrapper(getGuest)).Methods("GET")
-	r.HandleFunc("/guests/{id}", chain.RequestWrapper(deleteGuest)).Methods("DELETE")
-	r.HandleFunc("/guests/{id}/metadata", chain.RequestWrapper(getGuestMetadata)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metadata", chain.RequestWrapper(setGuestMetadata)).Methods("PATCH")
+	// Specific Guest
+	r.HandleFunc("/guests", chain.RequestWrapper(createGuest)).Methods("POST") // Special setup
+	r.HandleFunc("/guests/{id}", chain.GuestRunnerWrapper(getGuest)).Methods("GET")
+	r.HandleFunc("/guests/{id}/jobs", chain.GuestRunnerWrapper(getLatestJobs)).Queries("limit", "{limit:[0-9]+}").Methods("GET")
+	r.HandleFunc("/guests/{id}/jobs", chain.GuestRunnerWrapper(getLatestJobs)).Methods("GET")
+	//r.HandleFunc("/guests/{id}", chain.GuestRunnerWrapper(deleteGuest)).Methods("DELETE")
+	r.HandleFunc("/guests/{id}/metadata", chain.GuestRunnerWrapper(getGuestMetadata)).Methods("GET")
+	r.HandleFunc("/guests/{id}/metadata", chain.GuestRunnerWrapper(setGuestMetadata)).Methods("PATCH")
 
-	r.HandleFunc("/guests/{id}/metrics/cpu", chain.RequestWrapper(getGuestCPUMetrics)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metrics/disk", chain.RequestWrapper(getGuestDiskMetrics)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metrics/nic", chain.RequestWrapper(getGuestNicMetrics)).Methods("GET")
+	r.HandleFunc("/guests/{id}/metrics/cpu", chain.GuestRunnerWrapper(getCpuMetrics)).Methods("GET")
+	r.HandleFunc("/guests/{id}/metrics/disk", chain.GuestRunnerWrapper(getDiskMetrics)).Methods("GET")
+	r.HandleFunc("/guests/{id}/metrics/nic", chain.GuestRunnerWrapper(getNicMetrics)).Methods("GET")
 
 	for _, action := range []string{"shutdown", "reboot", "restart", "poweroff", "start", "suspend", "delete"} {
 		r.HandleFunc(fmt.Sprintf("/guests/{id}/%s", action), chain.GuestActionWrapper(action)).Methods("POST")
 	}
 
 	for _, prefix := range []string{"/guests/{id}", "/guests/{id}/disks/{disk}"} {
-		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.RequestWrapper(listSnapshots)).Methods("GET")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.RequestWrapper(createSnapshot)).Methods("POST")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.RequestWrapper(getSnapshot)).Methods("GET")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.RequestWrapper(deleteSnapshot)).Methods("DELETE")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/rollback", prefix), chain.RequestWrapper(rollbackSnapshot)).Methods("POST")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/download", prefix), chain.RequestWrapper(downloadSnapshot)).Methods("GET")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.GuestRunnerWrapper(listSnapshots)).Methods("GET")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.GuestRunnerWrapper(createSnapshot)).Methods("POST")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.GuestRunnerWrapper(getSnapshot)).Methods("GET")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.GuestRunnerWrapper(deleteSnapshot)).Methods("DELETE")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/rollback", prefix), chain.GuestRunnerWrapper(rollbackSnapshot)).Methods("POST")
+		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/download", prefix), chain.GuestRunnerWrapper(downloadSnapshot)).Methods("GET")
 	}
-	r.HandleFunc("/images", chain.RequestWrapper(listImages)).Methods("GET")
-	r.HandleFunc("/images", chain.RequestWrapper(fetchImage)).Methods("POST")
-	r.HandleFunc("/images/{id}", chain.RequestWrapper(getImage)).Methods("GET")
-	r.HandleFunc("/images/{id}", chain.RequestWrapper(deleteImage)).Methods("DELETE")
 
 	/*
 		guest := guests.PathPrefix("/{id}").Subrouter()
