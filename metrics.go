@@ -29,12 +29,12 @@ func getMetrics(r *HttpRequest, mtype string) *HttpErrorMessage {
 	if err != nil {
 		return r.NewError(err, 500)
 	}
-	switch {
-	case mtype == "cpu":
+	switch mtype {
+	case "cpu":
 		return r.JSON(200, response.CPU)
-	case mtype == "nic":
+	case "nic":
 		return r.JSON(200, response.Nic)
-	case mtype == "disk":
+	case "disk":
 		return r.JSON(200, response.Disk)
 	}
 	return r.NewError(errors.New("Unknown metric"), 500)

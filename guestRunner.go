@@ -90,21 +90,17 @@ func (gr *GuestRunner) Quit() {
 }
 
 func (gr *GuestRunner) Process(pipeline *Pipeline) error {
+	var err error
 	switch pipeline.Type {
 	case config.InfoAction:
-		if err := gr.Info.Process(pipeline); err != nil {
-			return err
-		}
+		err = gr.Info.Process(pipeline)
 	case config.StreamAction:
-		if err := gr.Stream.Process(pipeline); err != nil {
-			return err
-		}
+		err = gr.Stream.Process(pipeline)
 	case config.AsyncAction:
 		LogRunnerInfo(gr.GuestID, "async", "", "Queued")
 		gr.Async.Enqueue(pipeline)
-		return nil
 	}
-	return nil
+	return err
 }
 
 func NewSyncThrottle(name string, guestID string, maxConcurrency uint) *SyncThrottle {
