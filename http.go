@@ -12,7 +12,6 @@ import (
 	"runtime"
 	runtime_pprof "runtime/pprof"
 	"strings"
-	"time"
 
 	"github.com/bakins/net-http-recover"
 	"github.com/gorilla/handlers"
@@ -124,8 +123,6 @@ func Run(ctx *Context, address string) error {
 	s := &http.Server{
 		Addr:           address,
 		Handler:        r,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 	return s.ListenAndServe()
