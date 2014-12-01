@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"time"
 
 	"github.com/bakins/net-http-recover"
 	"github.com/gorilla/handlers"
@@ -37,9 +36,7 @@ func NewServer(port uint) (*Server, error) {
 	s := &Server{
 		RpcServer: rpc.NewServer(),
 		HttpServer: &http.Server{
-			Addr:         fmt.Sprintf("127.0.0.1:%d", port),
-			ReadTimeout:  10 * time.Second,
-			WriteTimeout: 10 * time.Second,
+			Addr: fmt.Sprintf("127.0.0.1:%d", port),
 		},
 		Router: mux.NewRouter(),
 	}
