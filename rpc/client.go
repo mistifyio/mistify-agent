@@ -2,11 +2,12 @@ package rpc
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/gorilla/rpc/json"
+	rpcJSON "github.com/gorilla/rpc/json"
 )
 
 type (
@@ -30,7 +31,7 @@ func NewClient(port uint, path string) (*Client, error) {
 
 // Do calls an RPC method
 func (c *Client) Do(method string, request interface{}, response interface{}) error {
-	data, err := json.EncodeClientRequest(method, request)
+	data, err := rpcJSON.EncodeClientRequest(method, request)
 	if err != nil {
 		return err
 	}
@@ -40,7 +41,7 @@ func (c *Client) Do(method string, request interface{}, response interface{}) er
 	}
 	defer resp.Body.Close()
 
-	err = json.DecodeClientResponse(resp.Body, &response)
+	err = rpcJSON.DecodeClientResponse(resp.Body, &response)
 	if err != nil {
 		return err
 	}
@@ -48,8 +49,8 @@ func (c *Client) Do(method string, request interface{}, response interface{}) er
 }
 
 // DoRaw calls a service and proxies the response
-func (c *Client) DoRaw(method string, request interface{}, rw http.ResponseWriter) {
-	data, err := json.EncodeClientRequest(method, request)
+func (c *Client) DoRaw(request interface{}, rw http.ResponseWriter) {
+	data, err := json.Marshal(request)
 	if err != nil {
 		http.Error(rw, err.Error(), 500)
 		return
