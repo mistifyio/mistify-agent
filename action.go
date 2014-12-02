@@ -36,7 +36,7 @@ type (
 // Run makes an individual stage request
 func (stage *Stage) Run() error {
 	if stage.Type == config.StreamAction {
-		stage.Service.Client.DoRaw(stage.Method, stage.Request, stage.RW)
+		stage.Service.Client.DoRaw(stage.Request, stage.RW)
 		return nil
 	} else {
 		return stage.Service.Client.Do(stage.Method, stage.Request, stage.Response)
