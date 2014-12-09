@@ -45,6 +45,15 @@ Push your feature branch to your fork.
 * All Go code should be formatted using [gofmt](http://golang.org/cmd/gofmt/). 
 * Every exported function should have [documentation](http://blog.golang.org/godoc-documenting-go-code) and corresponding [tests](http://golang.org/doc/code.html#Testing).
 
+### Go Tools ###
+For consistency and to catch minor issues for all go code, please run the following:
+* goimports
+* go vet
+* golint
+* errcheck
+
+Many editors can execute the above on save.
+
 **Important:** By submitting a patch, you agree to allow the project owners to license your work under the [Apache 2.0 License](./LICENSE).
 
 ----
