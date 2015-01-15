@@ -96,8 +96,10 @@ func createGuest(r *HttpRequest) *HttpErrorMessage {
 	if err != nil {
 		return r.NewError(err, 400)
 	}
-	if g.Id != "" && uuid.Parse(g.Id) == nil {
-		return r.NewError(fmt.Errorf("id must be uuid"), 400)
+	if g.Id != "" {
+		if uuid.Parse(g.Id) == nil {
+			return r.NewError(fmt.Errorf("id must be uuid"), 400)
+		}
 	} else {
 		g.Id = uuid.New()
 	}
