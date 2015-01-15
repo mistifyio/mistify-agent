@@ -125,6 +125,7 @@ func createGuest(r *HttpRequest) *HttpErrorMessage {
 			Action: action.Name,
 		}
 	}
+	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = runner.Process(pipeline)
 	if err != nil {
 		return r.NewError(err, 500)
@@ -257,6 +258,7 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 				Action: action.Name,
 			}
 		}
+		r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 		err = runner.Process(pipeline)
 		if err != nil {
 			return r.NewError(err, 500)
