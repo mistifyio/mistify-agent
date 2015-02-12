@@ -41,7 +41,7 @@ const (
 
 var (
 	// Valid actions and their associated type
-	valid_actions map[string]ActionType = map[string]ActionType{
+	ValidActions map[string]ActionType = map[string]ActionType{
 		"create":           AsyncAction,
 		"delete":           AsyncAction,
 		"reboot":           AsyncAction,
@@ -119,7 +119,7 @@ func (c *Config) AddConfig(path string) error {
 		if _, ok := c.Actions[name]; ok {
 			return fmt.Errorf("action %s has already been defined", name)
 		}
-		if _, ok := valid_actions[name]; !ok {
+		if _, ok := ValidActions[name]; !ok {
 			return fmt.Errorf("action %s is not a valid action", name)
 		}
 
@@ -129,7 +129,7 @@ func (c *Config) AddConfig(path string) error {
 			}
 		}
 
-		action.Type = valid_actions[name]
+		action.Type = ValidActions[name]
 		c.Actions[name] = action
 	}
 
