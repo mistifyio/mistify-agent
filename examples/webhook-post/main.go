@@ -7,12 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	flag "github.com/docker/docker/pkg/mflag"
-	"github.com/mistifyio/mistify-agent/rpc"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/mistifyio/mistify-agent/rpc"
+	flag "github.com/spf13/pflag"
 )
 
 type (
@@ -86,9 +87,9 @@ func main() {
 	var h bool
 	var endpoint string
 
-	flag.BoolVar(&h, []string{"h", "#help", "-help"}, false, "display the help")
-	flag.UintVar(&port, []string{"p", "#port", "-port"}, 31245, "listen port")
-	flag.StringVar(&endpoint, []string{"e", "#endpoint", "-endpoint"}, "", "webhook endpoint")
+	flag.BoolVarP(&h, "help", "h", false, "display the help")
+	flag.UintVarP(&port, "port", "p", 31245, "listen port")
+	flag.StringVarP(&endpoint, "endpoint", "e", "", "webhook endpoint")
 	flag.Parse()
 
 	if h {

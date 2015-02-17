@@ -11,9 +11,9 @@ import (
 	"os"
 	"path/filepath"
 
-	flag "github.com/docker/docker/pkg/mflag"
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/rpc"
+	flag "github.com/spf13/pflag"
 )
 
 type (
@@ -248,8 +248,8 @@ func main() {
 	var port uint
 	var h bool
 
-	flag.BoolVar(&h, []string{"h", "#help", "-help"}, false, "display the help")
-	flag.UintVar(&port, []string{"p", "#port", "-port"}, 9999, "listen port")
+	flag.BoolVarP(&h, "help", "h", false, "display the help")
+	flag.UintVarP(&port, "port", "p", 9999, "listen port")
 	flag.Parse()
 
 	if h {
