@@ -139,7 +139,7 @@ func (c *Chain) RequestWrapper(fn func(*HttpRequest) *HttpErrorMessage) http.Han
 		if err := fn(&req); err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
-				"func":  agent.RequestWrapper,
+				"func":  "agent.RequestWrapper",
 				"stack": strings.Join(err.Stack, "\t\n\t"),
 				"path":  r.URL.Path,
 			}).Error(err)
