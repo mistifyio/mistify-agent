@@ -73,13 +73,8 @@ func NewContext(cfg *config.Config) (*Context, error) {
 	ctx.GuestRunners = make(map[string]*GuestRunner)
 	ctx.GuestJobLogs = make(map[string]*GuestJobLog)
 
-	data, err := json.MarshalIndent(ctx, "   ", " ")
-	if err != nil {
-		return nil, err
-	}
-
 	log.WithFields(log.Fields{
-		"data": data,
+		"data": ctx,
 	}).Info("created new context")
 
 	return ctx, nil
