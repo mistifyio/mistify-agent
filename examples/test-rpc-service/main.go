@@ -6,11 +6,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	log "github.com/Sirupsen/logrus"
 	flag "github.com/docker/docker/pkg/mflag"
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/rpc"
@@ -258,10 +258,18 @@ func main() {
 	}
 	s, err := rpc.NewServer(port)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "rpc.NewServer",
+		}).Fatal(err)
 	}
 	test := &Test{}
 	s.RegisterService(test)
 	s.HandleFunc("/snapshots/download", test.DownloadSnapshot)
-	log.Fatal(s.ListenAndServe())
+	if err = s.ListenAndServe(); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "rpc.Server.ListenAndServe",
+		}).Fatal(err)
+	}
 }

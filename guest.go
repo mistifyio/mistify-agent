@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"code.google.com/p/go-uuid/uuid"
+	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
-	"github.com/mistifyio/mistify-agent/log"
 	"github.com/mistifyio/mistify-agent/rpc"
 )
 
@@ -273,7 +273,11 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 			}
 			if actionName == "delete" {
 				if err := r.Context.DeleteGuest(g); err != nil {
-					log.Error("Guest:", g.Id, "Delete Error:", err)
+					log.WithFields(log.Fields{
+						"guest": g.Id,
+						"error": err,
+						"func":  "agent.Context.DeleteGuest",
+					}).Error("Delete Error:", err)
 				}
 				return
 			}

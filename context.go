@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"sync"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/config"
-	"github.com/mistifyio/mistify-agent/log"
 )
 
 type (
@@ -75,10 +75,12 @@ func NewContext(cfg *config.Config) (*Context, error) {
 
 	data, err := json.MarshalIndent(ctx, "   ", " ")
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	log.Info("[Context] %s\n", data)
+	log.WithFields(log.Fields{
+		"data": data,
+	}).Info("created new context")
 
 	return ctx, nil
 }

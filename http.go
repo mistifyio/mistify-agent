@@ -13,13 +13,13 @@ import (
 	runtime_pprof "runtime/pprof"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/bakins/net-http-recover"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
-	"github.com/mistifyio/mistify-agent/log"
 )
 
 type (
@@ -137,7 +137,12 @@ func (c *Chain) RequestWrapper(fn func(*HttpRequest) *HttpErrorMessage) http.Han
 			Request:        r,
 		}
 		if err := fn(&req); err != nil {
-			log.Error("%s\n\t%s\n", err.Message, strings.Join(err.Stack, "\t\n\t"))
+			log.WithFields(log.Fields{
+				"error": err,
+				"func":  agent.RequestWrapper,
+				"stack": strings.Join(err.Stack, "\t\n\t"),
+				"path":  r.URL.Path,
+			}).Error(err)
 			req.JSON(err.Code, err)
 		}
 	})).ServeHTTP
