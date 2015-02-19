@@ -256,6 +256,9 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
+
+	log.SetFormatter(&log.JSONFormatter{})
+
 	s, err := rpc.NewServer(port)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -263,6 +266,7 @@ func main() {
 			"func":  "rpc.NewServer",
 		}).Fatal(err)
 	}
+
 	test := &Test{}
 	s.RegisterService(test)
 	s.HandleFunc("/snapshots/download", test.DownloadSnapshot)

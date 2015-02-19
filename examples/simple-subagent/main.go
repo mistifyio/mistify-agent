@@ -50,6 +50,8 @@ func main() {
 		os.Exit(0)
 	}
 
+	log.SetFormatter(&log.JSONFormatter{})
+
 	if percent > 100 {
 		percent = 100
 	}

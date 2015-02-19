@@ -104,6 +104,8 @@ func main() {
 		os.Exit(0)
 	}
 
+	log.SetFormatter(&log.JSONFormatter{})
+
 	if endpoint == "" {
 		log.Fatal("endpoint is required")
 	}
