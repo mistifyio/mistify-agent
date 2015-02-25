@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 
 	"github.com/mistifyio/mistify-agent/client"
@@ -246,16 +245,10 @@ func (t *Test) DownloadSnapshot(w http.ResponseWriter, r *http.Request) {
 func main() {
 
 	var port uint
-	var h bool
 
-	flag.BoolVarP(&h, "help", "h", false, "display the help")
 	flag.UintVarP(&port, "port", "p", 9999, "listen port")
 	flag.Parse()
 
-	if h {
-		flag.PrintDefaults()
-		os.Exit(0)
-	}
 	s, err := rpc.NewServer(port)
 	if err != nil {
 		log.Fatal(err)

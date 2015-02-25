@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/mistifyio/mistify-agent/rpc"
@@ -84,18 +83,11 @@ func (w *Webhook) Post(r *http.Request, request *rpc.GuestRequest, response *rpc
 func main() {
 
 	var port uint
-	var h bool
 	var endpoint string
 
-	flag.BoolVarP(&h, "help", "h", false, "display the help")
 	flag.UintVarP(&port, "port", "p", 31245, "listen port")
 	flag.StringVarP(&endpoint, "endpoint", "e", "", "webhook endpoint")
 	flag.Parse()
-
-	if h {
-		flag.PrintDefaults()
-		os.Exit(0)
-	}
 
 	if endpoint == "" {
 		log.Fatalf("endpoint is required")

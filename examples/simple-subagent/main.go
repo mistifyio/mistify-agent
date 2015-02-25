@@ -8,7 +8,6 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/mistifyio/mistify-agent/rpc"
@@ -38,17 +37,10 @@ func main() {
 
 	var port uint
 	var percent uint
-	var h bool
 
-	flag.BoolVarP(&h, "help", "h", false, "display the help")
 	flag.UintVarP(&port, "port", "p", 21356, "listen port")
 	flag.UintVarP(&percent, "percent", "c", 50, "Percentage to return an error")
 	flag.Parse()
-
-	if h {
-		flag.PrintDefaults()
-		os.Exit(0)
-	}
 
 	if percent > 100 {
 		percent = 100

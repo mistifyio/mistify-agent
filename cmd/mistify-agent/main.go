@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/mistifyio/mistify-agent"
 	"github.com/mistifyio/mistify-agent/config"
 	"github.com/mistifyio/mistify-agent/log"
@@ -11,18 +9,11 @@ import (
 
 func main() {
 	var address, logLevel, configFile string
-	var h bool
 
-	flag.BoolVarP(&h, "help", "h", false, "display the help")
 	flag.StringVarP(&address, "address", "a", ":8080", "listen address")
 	flag.StringVarP(&logLevel, "log-level", "l", "warning", "log level: debug/info/warning/error/critical/fatal")
 	flag.StringVarP(&configFile, "config-file", "c", "", "config file")
 	flag.Parse()
-
-	if h {
-		flag.PrintDefaults()
-		os.Exit(0)
-	}
 
 	if err := log.SetLogLevel(logLevel); err != nil {
 		log.Fatal(err)
