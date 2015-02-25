@@ -1,9 +1,9 @@
 package main
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/mistify-agent"
 	"github.com/mistifyio/mistify-agent/config"
-	"github.com/mistifyio/mistify-agent/log"
 	flag "github.com/spf13/pflag"
 )
 
@@ -15,9 +15,15 @@ func main() {
 	flag.StringVarP(&configFile, "config-file", "c", "", "config file")
 	flag.Parse()
 
-	if err := log.SetLogLevel(logLevel); err != nil {
-		log.Fatal(err)
+	log.SetFormatter(&log.JSONFormatter{})
+	level, err := log.ParseLevel(logLevel)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "log.ParseLevel",
+		}).Fatal(err)
 	}
+	log.SetLevel(level)
 
 	if configFile == "" {
 		// TODO: allow a config directory as well
@@ -26,24 +32,39 @@ func main() {
 
 	conf := config.NewConfig()
 
-	err := conf.AddConfig(configFile)
-	if err != nil {
-		log.Fatal(err)
+	if err := conf.AddConfig(configFile); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "config.AddConfig",
+		}).Fatal(err)
 	}
 
-	err = conf.Fixup()
-	if err != nil {
-		log.Fatal(err)
+	if err = conf.Fixup(); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "config.Fixup",
+		}).Fatal(err)
 	}
 
 	ctx, err := agent.NewContext(conf)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "agent.NewContext",
+		}).Fatal(err)
 	}
 
-	err = ctx.RunGuests()
-	if err != nil {
-		log.Fatal(err)
+	if err = ctx.RunGuests(); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "agent.Context.RunGuests",
+		}).Fatal(err)
 	}
-	log.Fatal(agent.Run(ctx, address))
+
+	if err = agent.Run(ctx, address); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "agent.Run",
+		}).Fatal(err)
+	}
 }

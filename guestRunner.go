@@ -3,8 +3,8 @@ package agent
 import (
 	"errors"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/mistify-agent/config"
-	"github.com/mistifyio/mistify-agent/log"
 )
 
 type (
@@ -180,22 +180,17 @@ func (pq *PipelineQueue) Quit() {
 }
 
 func LogRunnerInfo(guestID string, runnerName string, pipelineID string, logLine string) {
-	switch {
-	case pipelineID != "":
-		log.Info("[Info][Guest %s][Runner %s][Pipeline %s] %s", guestID, runnerName, pipelineID, logLine)
-	case runnerName != "":
-		log.Info("[Info][Guest %s][Runner %s] %s", guestID, runnerName, logLine)
-	default:
-		log.Info("[Info][Guest %s] %s", guestID, logLine)
-	}
+	log.WithFields(log.Fields{
+		"guest":    guestID,
+		"runner":   runnerName,
+		"pipeline": pipelineID,
+	}).Info(logLine)
 }
+
 func LogRunnerError(guestID string, runnerName string, pipelineID string, logLine string) {
-	switch {
-	case pipelineID != "":
-		log.Error("[Error][Guest %s][Runner %s][Pipeline %s] %s", guestID, runnerName, pipelineID, logLine)
-	case runnerName != "":
-		log.Error("[Error][Guest %s][Runner %s] %s", guestID, runnerName, logLine)
-	default:
-		log.Error("[Error][Guest %s] %s", guestID, logLine)
-	}
+	log.WithFields(log.Fields{
+		"guest":    guestID,
+		"runner":   runnerName,
+		"pipeline": pipelineID,
+	}).Error(logLine)
 }

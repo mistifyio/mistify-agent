@@ -7,10 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/mistify-agent/rpc"
 	flag "github.com/spf13/pflag"
 )
@@ -66,8 +66,15 @@ func (w *Webhook) Post(r *http.Request, request *rpc.GuestRequest, response *rpc
 		return err
 	}
 
-	log.Printf("body: %s", string(data))
-	resp, err := w.Client.Post(w.Endpoint, "application/json", bytes.NewReader(data))
+	ct := "application/json"
+	log.WithFields(log.Fields{
+		"guest":        request.Guest.Id,
+		"content_type": ct,
+		"endpoint":     w.Endpoint,
+		"body":         string(data),
+	}).Info("posting request")
+
+	resp, err := w.Client.Post(w.Endpoint, ct, bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
@@ -89,13 +96,18 @@ func main() {
 	flag.StringVarP(&endpoint, "endpoint", "e", "", "webhook endpoint")
 	flag.Parse()
 
+	log.SetFormatter(&log.JSONFormatter{})
+
 	if endpoint == "" {
-		log.Fatalf("endpoint is required")
+		log.Fatal("endpoint is required")
 	}
 
 	s, err := rpc.NewServer(port)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "rpc.NewServer",
+		}).Fatal(err)
 	}
 
 	w := &Webhook{
@@ -105,5 +117,10 @@ func main() {
 		},
 	}
 	s.RegisterService(w)
-	log.Fatal(s.ListenAndServe())
+	if err = s.ListenAndServe(); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "rpc.Server.ListenAndServe",
+		}).Fatal(err)
+	}
 }

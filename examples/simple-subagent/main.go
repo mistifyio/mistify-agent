@@ -5,11 +5,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/mistify-agent/rpc"
 	flag "github.com/spf13/pflag"
 )
@@ -42,6 +42,8 @@ func main() {
 	flag.UintVarP(&percent, "percent", "c", 50, "Percentage to return an error")
 	flag.Parse()
 
+	log.SetFormatter(&log.JSONFormatter{})
+
 	if percent > 100 {
 		percent = 100
 	}
@@ -53,9 +55,17 @@ func main() {
 
 	server, err := rpc.NewServer(port)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "rpc.NewServer",
+		}).Fatal(err)
 	}
 
 	server.RegisterService(&s)
-	log.Fatal(server.ListenAndServe())
+	if err = server.ListenAndServe(); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "rpc.Server.ListenAndServe",
+		}).Fatal(err)
+	}
 }
