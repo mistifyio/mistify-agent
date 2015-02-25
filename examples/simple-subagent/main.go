@@ -5,13 +5,14 @@ package main
 
 import (
 	"fmt"
-	flag "github.com/docker/docker/pkg/mflag"
-	"github.com/mistifyio/mistify-agent/rpc"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	flag "github.com/docker/docker/pkg/mflag"
+	"github.com/mistifyio/mistify-agent/rpc"
 )
 
 type (
@@ -49,6 +50,8 @@ func main() {
 		os.Exit(0)
 	}
 
+	log.SetFormatter(&log.JSONFormatter{})
+
 	if percent > 100 {
 		percent = 100
 	}
@@ -60,9 +63,17 @@ func main() {
 
 	server, err := rpc.NewServer(port)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "rpc.NewServer",
+		}).Fatal(err)
 	}
 
 	server.RegisterService(&s)
-	log.Fatal(server.ListenAndServe())
+	if err = server.ListenAndServe(); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "rpc.Server.ListenAndServe",
+		}).Fatal(err)
+	}
 }
