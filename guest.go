@@ -50,7 +50,7 @@ func (ctx *Context) DeleteGuest(g *client.Guest) error {
 		return err
 	}
 	ctx.DeleteGuestRunner(g.Id)
-	ctx.DeleteGuestJobLog(g.Id)
+	_ = ctx.DeleteGuestJobLog(g.Id)
 	return nil
 }
 
@@ -114,7 +114,9 @@ func createGuest(r *HttpRequest) *HttpErrorMessage {
 	}
 
 	runner := r.Context.NewGuestRunner(g.Id, 100, 5)
-	r.Context.CreateGuestJobLog(g.Id)
+	if err := r.Context.CreateGuestJobLog(g.Id); err != nil {
+		return r.NewError(err, 500)
+	}
 
 	response := &rpc.GuestResponse{}
 	pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, nil)
@@ -281,7 +283,9 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 				}
 				return
 			}
-			r.Context.PersistGuest(g)
+			if err := r.Context.PersistGuest(g); err != nil {
+				return
+			}
 		}()
 		return r.JSON(202, g)
 	})

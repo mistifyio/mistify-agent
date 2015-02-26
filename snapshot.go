@@ -140,7 +140,7 @@ func downloadSnapshot(r *HttpRequest) *HttpErrorMessage {
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	// Streaming handles sending its own error responses
-	r.GuestRunner.Process(pipeline)
+	_ = r.GuestRunner.Process(pipeline)
 
 	return nil
 }

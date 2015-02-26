@@ -146,7 +146,9 @@ func NewPipelineQueue(name string, guestID string, context *Context) *PipelineQu
 }
 
 func (pq *PipelineQueue) Enqueue(pipeline *Pipeline) {
-	pq.Context.GuestJobLogs[pq.GuestID].AddJob(pipeline.ID, pipeline.Action)
+	if err := pq.Context.GuestJobLogs[pq.GuestID].AddJob(pipeline.ID, pipeline.Action); err != nil {
+		LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
+	}
 	pq.PipelineChan <- pipeline
 	return
 }
@@ -159,13 +161,18 @@ func (pq *PipelineQueue) Process() {
 				LogRunnerInfo(pq.GuestID, pq.Name, "", "Quitting")
 				return
 			case pipeline := <-pq.PipelineChan:
-				pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Running, "")
-				err := pipeline.Run()
-				if err != nil {
-					pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Errored, err.Error())
+				if err := pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Running, ""); err != nil {
+					LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
+				}
+				if err := pipeline.Run(); err != nil {
+					if err := pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Errored, err.Error()); err != nil {
+						LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
+					}
 					LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
 				} else {
-					pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Complete, "")
+					if err := pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Complete, ""); err != nil {
+						LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
+					}
 					LogRunnerInfo(pq.GuestID, pq.Name, pipeline.ID, "Success")
 				}
 			}

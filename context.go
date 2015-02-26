@@ -126,8 +126,8 @@ func (ctx *Context) RunGuests() error {
 				// should this be fatal if it just fails on one guest??
 				return err
 			}
-			ctx.NewGuestRunner(guest.Id, 100, 5)
-			ctx.CreateGuestJobLog(guest.Id)
+			_ = ctx.NewGuestRunner(guest.Id, 100, 5)
+			_ = ctx.CreateGuestJobLog(guest.Id)
 			return nil
 		})
 	})
