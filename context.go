@@ -2,7 +2,6 @@ package agent
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 
@@ -80,10 +79,11 @@ func NewContext(cfg *config.Config) (*Context, error) {
 	return ctx, nil
 }
 
+// GetAction looks up an action by name
 func (ctx *Context) GetAction(name string) (*Action, error) {
 	action, ok := ctx.Actions[name]
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("%s: Not configured", name))
+		return nil, fmt.Errorf("%s: Not configured", name)
 	}
 	return action, nil
 }
@@ -101,7 +101,7 @@ func (ctx *Context) GetGuest(id string) (*client.Guest, error) {
 			return err
 		}
 		if data == nil {
-			return NotFound
+			return ErrNotFound
 		}
 
 		return json.Unmarshal(data, &g)

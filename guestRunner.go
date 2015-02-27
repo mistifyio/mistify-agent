@@ -8,6 +8,7 @@ import (
 )
 
 type (
+	// GuestRunner manages actions being performed for a guest
 	GuestRunner struct {
 		Context  *Context
 		GuestID  string
@@ -17,6 +18,7 @@ type (
 		QuitChan chan struct{}
 	}
 
+	// SyncThrottle throttles synchronous actions
 	SyncThrottle struct {
 		GuestID        string
 		Name           string
@@ -24,6 +26,7 @@ type (
 		QuitChan       chan struct{}
 	}
 
+	// PipelineQueue holds asyncronous action pipelines
 	PipelineQueue struct {
 		GuestID      string
 		Name         string
@@ -33,6 +36,7 @@ type (
 	}
 )
 
+// NewGuestRunner creates a new GuestRunner
 func (context *Context) NewGuestRunner(guestID string, maxInfo uint, maxStream uint) *GuestRunner {
 	// Prevent others from modifying at the same time
 	context.GuestRunnerMutex.Lock()
@@ -61,6 +65,7 @@ func (context *Context) NewGuestRunner(guestID string, maxInfo uint, maxStream u
 	return runner
 }
 
+// DeleteGuestRunner deletes a GuestRunner
 func (context *Context) DeleteGuestRunner(guestID string) {
 	// Prevent others from modifying at the same time
 	context.GuestRunnerMutex.Lock()
@@ -76,6 +81,7 @@ func (context *Context) DeleteGuestRunner(guestID string) {
 	LogRunnerInfo(guestID, "", "", "Deleted")
 }
 
+// GetGuestRunner retrieves a GuestRunner
 func (context *Context) GetGuestRunner(guestID string) (*GuestRunner, error) {
 	runner, ok := context.GuestRunners[guestID]
 	if !ok {
@@ -84,11 +90,13 @@ func (context *Context) GetGuestRunner(guestID string) (*GuestRunner, error) {
 	return runner, nil
 }
 
+// Quit shuts down a GuestRunner
 func (gr *GuestRunner) Quit() {
 	LogRunnerInfo(gr.GuestID, "", "", "Quiting")
 	gr.Async.Quit()
 }
 
+// Process directs actions into sync or async handling depending on the type
 func (gr *GuestRunner) Process(pipeline *Pipeline) error {
 	var err error
 	switch pipeline.Type {
@@ -103,6 +111,7 @@ func (gr *GuestRunner) Process(pipeline *Pipeline) error {
 	return err
 }
 
+// NewSyncThrottle creates a new SyncThrottle
 func NewSyncThrottle(name string, guestID string, maxConcurrency uint) *SyncThrottle {
 	st := &SyncThrottle{
 		Name:           name,
@@ -116,6 +125,7 @@ func NewSyncThrottle(name string, guestID string, maxConcurrency uint) *SyncThro
 	return st
 }
 
+// Process runs an action
 func (st *SyncThrottle) Process(pipeline *Pipeline) error {
 	st.Reserve()
 	defer st.Release()
@@ -123,16 +133,19 @@ func (st *SyncThrottle) Process(pipeline *Pipeline) error {
 	return pipeline.Run()
 }
 
+// Reserve blocks until an action is allowed to run based on throttling
 func (st *SyncThrottle) Reserve() {
 	<-st.ConcurrentChan
 	return
 }
 
+// Release signals that the action is done
 func (st *SyncThrottle) Release() {
 	st.ConcurrentChan <- struct{}{}
 	return
 }
 
+// NewPipelineQueue creates a new PipelineQueue
 func NewPipelineQueue(name string, guestID string, context *Context) *PipelineQueue {
 	max := 100
 	pq := &PipelineQueue{
@@ -145,6 +158,7 @@ func NewPipelineQueue(name string, guestID string, context *Context) *PipelineQu
 	return pq
 }
 
+// Enqueue queues an async action
 func (pq *PipelineQueue) Enqueue(pipeline *Pipeline) {
 	if err := pq.Context.GuestJobLogs[pq.GuestID].AddJob(pipeline.ID, pipeline.Action); err != nil {
 		LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
@@ -153,6 +167,7 @@ func (pq *PipelineQueue) Enqueue(pipeline *Pipeline) {
 	return
 }
 
+// Process monitors the queue and kicks off async actions
 func (pq *PipelineQueue) Process() {
 	go func() {
 		for {
@@ -180,12 +195,14 @@ func (pq *PipelineQueue) Process() {
 	}()
 }
 
+// Quit signals the pipeline queue to stop processing after the current action
 func (pq *PipelineQueue) Quit() {
 	go func() {
 		pq.QuitChan <- struct{}{}
 	}()
 }
 
+// LogRunnerInfo writes informational logs
 func LogRunnerInfo(guestID string, runnerName string, pipelineID string, logLine string) {
 	log.WithFields(log.Fields{
 		"guest":    guestID,
@@ -194,6 +211,7 @@ func LogRunnerInfo(guestID string, runnerName string, pipelineID string, logLine
 	}).Info(logLine)
 }
 
+// LogRunnerError writes error logs
 func LogRunnerError(guestID string, runnerName string, pipelineID string, logLine string) {
 	log.WithFields(log.Fields{
 		"guest":    guestID,

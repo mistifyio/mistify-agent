@@ -6,7 +6,7 @@ import (
 	"github.com/mistifyio/mistify-agent/rpc"
 )
 
-func listImages(r *HttpRequest) *HttpErrorMessage {
+func listImages(r *HTTPRequest) *HTTPErrorMessage {
 	response := &rpc.ImageResponse{}
 	request := &rpc.ImageRequest{}
 	action, err := r.Context.GetAction("listImages")
@@ -22,7 +22,7 @@ func listImages(r *HttpRequest) *HttpErrorMessage {
 	return r.JSON(200, response.Images)
 }
 
-func getImage(r *HttpRequest) *HttpErrorMessage {
+func getImage(r *HTTPRequest) *HTTPErrorMessage {
 	response := &rpc.ImageResponse{}
 	request := &rpc.ImageRequest{
 		Id: r.Parameter("id"),
@@ -39,13 +39,13 @@ func getImage(r *HttpRequest) *HttpErrorMessage {
 	}
 
 	if len(response.Images) < 1 {
-		return r.NewError(NotFound, 404)
+		return r.NewError(ErrNotFound, 404)
 	}
 
 	return r.JSON(200, response.Images[0])
 }
 
-func deleteImage(r *HttpRequest) *HttpErrorMessage {
+func deleteImage(r *HTTPRequest) *HTTPErrorMessage {
 	response := &rpc.ImageResponse{}
 	request := &rpc.ImageRequest{
 		Id: r.Parameter("id"),
@@ -64,7 +64,7 @@ func deleteImage(r *HttpRequest) *HttpErrorMessage {
 	return r.JSON(202, struct{}{})
 }
 
-func fetchImage(r *HttpRequest) *HttpErrorMessage {
+func fetchImage(r *HTTPRequest) *HTTPErrorMessage {
 	request := &rpc.ImageRequest{}
 	err := json.NewDecoder(r.Request.Body).Decode(request)
 	if err != nil {

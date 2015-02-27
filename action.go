@@ -8,6 +8,7 @@ import (
 )
 
 type (
+	// Stage is a single step an action must take
 	Stage struct {
 		Service  *Service
 		Type     config.ActionType
@@ -18,6 +19,7 @@ type (
 		RW       http.ResponseWriter // For streaming responses
 	}
 
+	// Pipeline is a full set of stage instances required to complete an action
 	Pipeline struct {
 		ID       string
 		Action   string
@@ -26,6 +28,7 @@ type (
 		DoneChan chan error // Signal async is done or errored, for post-hooks
 	}
 
+	// Action is a full set of stage templates required to complete an action
 	Action struct {
 		Name   string
 		Type   config.ActionType
@@ -38,9 +41,8 @@ func (stage *Stage) Run() error {
 	if stage.Type == config.StreamAction {
 		stage.Service.Client.DoRaw(stage.Request, stage.RW)
 		return nil
-	} else {
-		return stage.Service.Client.Do(stage.Method, stage.Request, stage.Response)
 	}
+	return stage.Service.Client.Do(stage.Method, stage.Request, stage.Response)
 }
 
 // Run executes each stage in the pipeline. It bails out as soon as an error
@@ -60,7 +62,7 @@ func (pipeline *Pipeline) Run() error {
 	return nil
 }
 
-// GeneragePipeline creates an instance of Pipeline based on an action's
+// GeneratePipeline creates an instance of Pipeline based on an action's
 // stages and supplied request & response. It is returned so that any additional
 // modifications (such as adding stage args to requests) can be made before
 // running if needed.

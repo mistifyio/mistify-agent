@@ -7,7 +7,7 @@ import (
 	"github.com/mistifyio/mistify-agent/rpc"
 )
 
-func getMetrics(r *HttpRequest, mtype string) *HttpErrorMessage {
+func getMetrics(r *HTTPRequest, mtype string) *HTTPErrorMessage {
 	action, err := r.Context.GetAction(fmt.Sprintf("%sMetrics", mtype))
 	if err != nil {
 		return r.NewError(err, 404)
@@ -40,14 +40,14 @@ func getMetrics(r *HttpRequest, mtype string) *HttpErrorMessage {
 	return r.NewError(errors.New("Unknown metric"), 500)
 }
 
-func getCpuMetrics(r *HttpRequest) *HttpErrorMessage {
+func getCPUMetrics(r *HTTPRequest) *HTTPErrorMessage {
 	return getMetrics(r, "cpu")
 }
 
-func getNicMetrics(r *HttpRequest) *HttpErrorMessage {
+func getNicMetrics(r *HTTPRequest) *HTTPErrorMessage {
 	return getMetrics(r, "nic")
 }
 
-func getDiskMetrics(r *HttpRequest) *HttpErrorMessage {
+func getDiskMetrics(r *HTTPRequest) *HTTPErrorMessage {
 	return getMetrics(r, "disk")
 }
