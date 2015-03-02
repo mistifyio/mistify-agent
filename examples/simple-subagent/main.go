@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"os"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	flag "github.com/docker/docker/pkg/mflag"
 	"github.com/mistifyio/mistify-agent/rpc"
+	flag "github.com/spf13/pflag"
 )
 
 type (
@@ -38,17 +37,10 @@ func main() {
 
 	var port uint
 	var percent uint
-	var h bool
 
-	flag.BoolVar(&h, []string{"h", "#help", "-help"}, false, "display the help")
-	flag.UintVar(&port, []string{"p", "#port", "-port"}, 21356, "listen port")
-	flag.UintVar(&percent, []string{"c", "#percent", "-percent"}, 50, "Percentage to return an error")
+	flag.UintVarP(&port, "port", "p", 21356, "listen port")
+	flag.UintVarP(&percent, "percent", "c", 50, "Percentage to return an error")
 	flag.Parse()
-
-	if h {
-		flag.PrintDefaults()
-		os.Exit(0)
-	}
 
 	log.SetFormatter(&log.JSONFormatter{})
 

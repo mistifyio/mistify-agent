@@ -8,12 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	flag "github.com/docker/docker/pkg/mflag"
 	"github.com/mistifyio/mistify-agent/rpc"
+	flag "github.com/spf13/pflag"
 )
 
 type (
@@ -91,18 +90,11 @@ func (w *Webhook) Post(r *http.Request, request *rpc.GuestRequest, response *rpc
 func main() {
 
 	var port uint
-	var h bool
 	var endpoint string
 
-	flag.BoolVar(&h, []string{"h", "#help", "-help"}, false, "display the help")
-	flag.UintVar(&port, []string{"p", "#port", "-port"}, 31245, "listen port")
-	flag.StringVar(&endpoint, []string{"e", "#endpoint", "-endpoint"}, "", "webhook endpoint")
+	flag.UintVarP(&port, "port", "p", 31245, "listen port")
+	flag.StringVarP(&endpoint, "endpoint", "e", "", "webhook endpoint")
 	flag.Parse()
-
-	if h {
-		flag.PrintDefaults()
-		os.Exit(0)
-	}
 
 	log.SetFormatter(&log.JSONFormatter{})
 
