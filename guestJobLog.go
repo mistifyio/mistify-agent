@@ -11,8 +11,10 @@ import (
 )
 
 type (
+	// GuestJobStatus is the string status of a job
 	GuestJobStatus string
 
+	// GuestJob holds information about a job
 	GuestJob struct {
 		ID        string
 		Action    string
@@ -23,6 +25,7 @@ type (
 		Message   string
 	}
 
+	// GuestJobLog holds the most recent jobs for a guest
 	GuestJobLog struct {
 		GuestID     string
 		Context     *Context
@@ -33,13 +36,19 @@ type (
 )
 
 const (
-	MaxLoggedJobs int            = 100
-	Queued        GuestJobStatus = "Queued"
-	Running       GuestJobStatus = "Running"
-	Complete      GuestJobStatus = "Complete"
-	Errored       GuestJobStatus = "Error"
+	// MaxLoggedJobs configures how many jobs to prune the log to
+	MaxLoggedJobs int = 100
+	// Queued is the queued job status
+	Queued GuestJobStatus = "Queued"
+	// Running is the running job status
+	Running GuestJobStatus = "Running"
+	// Complete is the complete job status
+	Complete GuestJobStatus = "Complete"
+	// Errored is the errored job status
+	Errored GuestJobStatus = "Error"
 )
 
+// ReIndex rebuilds the job id index for a job log
 func (guestJobLog *GuestJobLog) ReIndex() {
 	index := make(map[string]int)
 	for i, guestJob := range guestJobLog.Jobs {
@@ -48,25 +57,28 @@ func (guestJobLog *GuestJobLog) ReIndex() {
 	guestJobLog.Index = index
 }
 
+// GetJob retrieves a job from the log based on job id
 func (guestJobLog *GuestJobLog) GetJob(jobID string) (*GuestJob, error) {
 	index, ok := guestJobLog.Index[jobID]
 	if !ok {
-		return nil, NotFound
+		return nil, ErrNotFound
 	}
 	return guestJobLog.Jobs[index], nil
 }
 
-func (guestJob *GuestJobLog) GetLatestJobs(limit int) []*GuestJob {
+// GetLatestJobs returns the latest X jobs in the log
+func (guestJobLog *GuestJobLog) GetLatestJobs(limit int) []*GuestJob {
 	if limit <= 0 {
 		return make([]*GuestJob, 0)
 	}
-	if limit > len(guestJob.Jobs) {
-		limit = len(guestJob.Jobs)
+	if limit > len(guestJobLog.Jobs) {
+		limit = len(guestJobLog.Jobs)
 	}
 
-	return guestJob.Jobs[:limit]
+	return guestJobLog.Jobs[:limit]
 }
 
+// AddJob adds a job to the log
 func (guestJobLog *GuestJobLog) AddJob(jobID string, action string) error {
 	guestJobLog.ModifyMutex.Lock()
 	defer guestJobLog.ModifyMutex.Unlock()
@@ -95,6 +107,7 @@ func (guestJobLog *GuestJobLog) AddJob(jobID string, action string) error {
 	return guestJobLog.Persist()
 }
 
+// UpdateJob updates a job's status and timing information
 func (guestJobLog *GuestJobLog) UpdateJob(jobID string, action string, status GuestJobStatus, message string) error {
 	guestJobLog.ModifyMutex.Lock()
 	defer guestJobLog.ModifyMutex.Unlock()
@@ -112,6 +125,7 @@ func (guestJobLog *GuestJobLog) UpdateJob(jobID string, action string, status Gu
 	return guestJobLog.Persist()
 }
 
+// Persist saves a job log
 func (guestJobLog *GuestJobLog) Persist() error {
 	return guestJobLog.Context.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guest_jobs")
@@ -126,6 +140,7 @@ func (guestJobLog *GuestJobLog) Persist() error {
 	})
 }
 
+// CreateGuestJobLog creates a new job log for a guest
 func (context *Context) CreateGuestJobLog(guestID string) error {
 	// Attempt to load from database
 	guestJobLog, err := context.GetGuestJobLog(guestID)
@@ -133,7 +148,7 @@ func (context *Context) CreateGuestJobLog(guestID string) error {
 		context.GuestJobLogs[guestID] = guestJobLog
 		return nil
 	}
-	if err != NotFound {
+	if err != ErrNotFound {
 		return err
 	}
 	// Create a new one
@@ -148,6 +163,7 @@ func (context *Context) CreateGuestJobLog(guestID string) error {
 	return nil
 }
 
+// GetGuestJobLog retrieves a guest's job log
 func (context *Context) GetGuestJobLog(guestID string) (*GuestJobLog, error) {
 	guestJobLog := &GuestJobLog{
 		GuestID: guestID,
@@ -164,7 +180,7 @@ func (context *Context) GetGuestJobLog(guestID string) (*GuestJobLog, error) {
 			return err
 		}
 		if data == nil {
-			return NotFound
+			return ErrNotFound
 		}
 		return json.Unmarshal(data, &guestJobLog.Jobs)
 	})
@@ -175,6 +191,7 @@ func (context *Context) GetGuestJobLog(guestID string) (*GuestJobLog, error) {
 	return guestJobLog, nil
 }
 
+// DeleteGuestJobLog removes a guest's job log
 func (context *Context) DeleteGuestJobLog(guestID string) error {
 	return context.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guest_jobs")
@@ -190,10 +207,10 @@ func (context *Context) DeleteGuestJobLog(guestID string) error {
 	})
 }
 
-func getLatestJobs(r *HttpRequest) *HttpErrorMessage {
+func getLatestJobs(r *HTTPRequest) *HTTPErrorMessage {
 	guestJobLog, ok := r.Context.GuestJobLogs[r.Guest.Id]
 	if !ok {
-		return r.NewError(NotFound, 404)
+		return r.NewError(ErrNotFound, 404)
 	}
 	limitParam := r.Parameter("limit")
 	limit := MaxLoggedJobs
@@ -208,15 +225,15 @@ func getLatestJobs(r *HttpRequest) *HttpErrorMessage {
 	return r.JSON(200, guestJobLog.GetLatestJobs(limit))
 }
 
-func getJobStatus(r *HttpRequest) *HttpErrorMessage {
+func getJobStatus(r *HTTPRequest) *HTTPErrorMessage {
 	guestJobLog, ok := r.Context.GuestJobLogs[r.Guest.Id]
 	if !ok {
-		return r.NewError(NotFound, 404)
+		return r.NewError(ErrNotFound, 404)
 	}
 	guestJob, err := guestJobLog.GetJob(r.Parameter("jobID"))
 	if err != nil {
 		code := 500
-		if err == NotFound {
+		if err == ErrNotFound {
 			code = 404
 		}
 		return r.NewError(err, code)

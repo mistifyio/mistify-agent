@@ -50,12 +50,12 @@ func (ctx *Context) DeleteGuest(g *client.Guest) error {
 		return err
 	}
 	ctx.DeleteGuestRunner(g.Id)
-	ctx.DeleteGuestJobLog(g.Id)
+	_ = ctx.DeleteGuestJobLog(g.Id)
 	return nil
 }
 
-func listGuests(r *HttpRequest) *HttpErrorMessage {
-	guests := make([]*client.Guest, 0)
+func listGuests(r *HTTPRequest) *HTTPErrorMessage {
+	var guests []*client.Guest
 
 	err := r.Context.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guests")
@@ -85,7 +85,7 @@ func listGuests(r *HttpRequest) *HttpErrorMessage {
 // simple middleware called first before the guest and runner retrieval
 // middlewares
 // NOTE: The config for create should include stages for startup
-func createGuest(r *HttpRequest) *HttpErrorMessage {
+func createGuest(r *HTTPRequest) *HTTPErrorMessage {
 	action, err := r.Context.GetAction("create")
 	if err != nil {
 		return r.NewError(err, 404)
@@ -114,7 +114,9 @@ func createGuest(r *HttpRequest) *HttpErrorMessage {
 	}
 
 	runner := r.Context.NewGuestRunner(g.Id, 100, 5)
-	r.Context.CreateGuestJobLog(g.Id)
+	if err := r.Context.CreateGuestJobLog(g.Id); err != nil {
+		return r.NewError(err, 500)
+	}
 
 	response := &rpc.GuestResponse{}
 	pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, nil)
@@ -135,7 +137,7 @@ func createGuest(r *HttpRequest) *HttpErrorMessage {
 	return r.JSON(202, g)
 }
 
-func withGuest(r *HttpRequest, fn func(r *HttpRequest) *HttpErrorMessage) *HttpErrorMessage {
+func withGuest(r *HTTPRequest, fn func(r *HTTPRequest) *HTTPErrorMessage) *HTTPErrorMessage {
 	id := r.Parameter("id")
 	var g client.Guest
 	err := r.Context.db.Transaction(func(tx *kvite.Tx) error {
@@ -148,7 +150,7 @@ func withGuest(r *HttpRequest, fn func(r *HttpRequest) *HttpErrorMessage) *HttpE
 			return err
 		}
 		if data == nil {
-			return NotFound
+			return ErrNotFound
 		}
 
 		return json.Unmarshal(data, &g)
@@ -156,7 +158,7 @@ func withGuest(r *HttpRequest, fn func(r *HttpRequest) *HttpErrorMessage) *HttpE
 
 	if err != nil {
 		code := 500
-		if err == NotFound {
+		if err == ErrNotFound {
 			code = 404
 		}
 		return r.NewError(err, code)
@@ -169,15 +171,15 @@ func withGuest(r *HttpRequest, fn func(r *HttpRequest) *HttpErrorMessage) *HttpE
 	return fn(r)
 }
 
-func getGuest(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(r *HttpRequest) *HttpErrorMessage {
+func getGuest(r *HTTPRequest) *HTTPErrorMessage {
+	return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
 		g := r.Guest
 		return r.JSON(200, g)
 	})
 }
 
-func deleteGuest(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(r *HttpRequest) *HttpErrorMessage {
+func deleteGuest(r *HTTPRequest) *HTTPErrorMessage {
+	return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
 		g := r.Guest
 		// TODO: Make sure to use the DoneChan here
 		err := r.Context.PersistGuest(g)
@@ -188,15 +190,15 @@ func deleteGuest(r *HttpRequest) *HttpErrorMessage {
 	})
 }
 
-func getGuestMetadata(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(r *HttpRequest) *HttpErrorMessage {
+func getGuestMetadata(r *HTTPRequest) *HTTPErrorMessage {
+	return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
 		g := r.Guest
 		return r.JSON(200, g.Metadata)
 	})
 }
 
-func setGuestMetadata(r *HttpRequest) *HttpErrorMessage {
-	return withGuest(r, func(r *HttpRequest) *HttpErrorMessage {
+func setGuestMetadata(r *HTTPRequest) *HTTPErrorMessage {
+	return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
 		g := r.Guest
 		var metadata map[string]string
 		err := json.NewDecoder(r.Request.Body).Decode(&metadata)
@@ -222,9 +224,11 @@ func setGuestMetadata(r *HttpRequest) *HttpErrorMessage {
 
 // TODO: These wrappers are ugly nesting. Try to find a cleaner, more modular
 // way to do it
-func (c *Chain) GuestRunnerWrapper(fn func(*HttpRequest) *HttpErrorMessage) http.HandlerFunc {
-	return c.RequestWrapper(func(r *HttpRequest) *HttpErrorMessage {
-		return withGuest(r, func(r *HttpRequest) *HttpErrorMessage {
+
+// GuestRunnerWrapper is a middleware that retrieves the runner for a guest
+func (c *Chain) GuestRunnerWrapper(fn func(*HTTPRequest) *HTTPErrorMessage) http.HandlerFunc {
+	return c.RequestWrapper(func(r *HTTPRequest) *HTTPErrorMessage {
+		return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
 			g := r.Guest
 			runner, err := r.Context.GetGuestRunner(g.Id)
 			if err != nil {
@@ -239,7 +243,7 @@ func (c *Chain) GuestRunnerWrapper(fn func(*HttpRequest) *HttpErrorMessage) http
 
 // GuestActionWrapper wraps an HTTP request with a Guest action to avoid duplicated code
 func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
-	return c.GuestRunnerWrapper(func(r *HttpRequest) *HttpErrorMessage {
+	return c.GuestRunnerWrapper(func(r *HTTPRequest) *HTTPErrorMessage {
 		g := r.Guest
 		runner := r.GuestRunner
 
@@ -281,7 +285,9 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 				}
 				return
 			}
-			r.Context.PersistGuest(g)
+			if err := r.Context.PersistGuest(g); err != nil {
+				return
+			}
 		}()
 		return r.JSON(202, g)
 	})

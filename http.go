@@ -23,7 +23,8 @@ import (
 )
 
 type (
-	HttpRequest struct {
+	// HTTPRequest is a container for an http request and its context
+	HTTPRequest struct {
 		ResponseWriter http.ResponseWriter
 		Request        *http.Request
 		Context        *Context
@@ -32,12 +33,14 @@ type (
 		GuestRunner    *GuestRunner
 	}
 
-	HttpErrorMessage struct {
+	// HTTPErrorMessage is an enhanced error struct for http error responses
+	HTTPErrorMessage struct {
 		Message string   `json:"message"`
 		Code    int      `json:"code"`
 		Stack   []string `json:"stack"`
 	}
 
+	// Chain is a middleware chain
 	Chain struct {
 		alice.Chain
 		ctx *Context
@@ -45,9 +48,11 @@ type (
 )
 
 var (
-	NotFound = errors.New("not found")
+	// ErrNotFound is the error for a resouce not found
+	ErrNotFound = errors.New("not found")
 )
 
+// AttachProfiler enables debug profiling exposed on http api endpoints
 func AttachProfiler(router *mux.Router) {
 	router.HandleFunc("/debug/pprof/", pprof.Index)
 	for _, profile := range runtime_pprof.Profiles() {
@@ -58,6 +63,7 @@ func AttachProfiler(router *mux.Router) {
 	router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 }
 
+// Run prepares and runs the http server
 func Run(ctx *Context, address string) error {
 	r := mux.NewRouter()
 	r.StrictSlash(true)
@@ -97,7 +103,7 @@ func Run(ctx *Context, address string) error {
 	r.HandleFunc("/guests/{id}/metadata", chain.GuestRunnerWrapper(getGuestMetadata)).Methods("GET")
 	r.HandleFunc("/guests/{id}/metadata", chain.GuestRunnerWrapper(setGuestMetadata)).Methods("PATCH")
 
-	r.HandleFunc("/guests/{id}/metrics/cpu", chain.GuestRunnerWrapper(getCpuMetrics)).Methods("GET")
+	r.HandleFunc("/guests/{id}/metrics/cpu", chain.GuestRunnerWrapper(getCPUMetrics)).Methods("GET")
 	r.HandleFunc("/guests/{id}/metrics/disk", chain.GuestRunnerWrapper(getDiskMetrics)).Methods("GET")
 	r.HandleFunc("/guests/{id}/metrics/nic", chain.GuestRunnerWrapper(getNicMetrics)).Methods("GET")
 
@@ -129,9 +135,10 @@ func Run(ctx *Context, address string) error {
 	return s.ListenAndServe()
 }
 
-func (c *Chain) RequestWrapper(fn func(*HttpRequest) *HttpErrorMessage) http.HandlerFunc {
+// RequestWrapper turns a basic http request into an HTTPRequest
+func (c *Chain) RequestWrapper(fn func(*HTTPRequest) *HTTPErrorMessage) http.HandlerFunc {
 	return c.Then(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		req := HttpRequest{
+		req := HTTPRequest{
 			Context:        c.ctx,
 			ResponseWriter: w,
 			Request:        r,
@@ -148,7 +155,8 @@ func (c *Chain) RequestWrapper(fn func(*HttpRequest) *HttpErrorMessage) http.Han
 	})).ServeHTTP
 }
 
-func (r *HttpRequest) Parameter(key string) string {
+// Parameter retrieves request parameter
+func (r *HTTPRequest) Parameter(key string) string {
 	vars := r.vars
 
 	if vars == nil {
@@ -163,11 +171,13 @@ func (r *HttpRequest) Parameter(key string) string {
 	return vars[key]
 }
 
-func (r *HttpRequest) SetHeader(key, val string) {
+// SetHeader sets an http response header
+func (r *HTTPRequest) SetHeader(key, val string) {
 	r.ResponseWriter.Header().Set(key, val)
 }
 
-func (r *HttpRequest) JSON(code int, obj interface{}) *HttpErrorMessage {
+// JSON sends an http response with a json body
+func (r *HTTPRequest) JSON(code int, obj interface{}) *HTTPErrorMessage {
 	r.SetHeader("Content-Type", "application/json")
 	r.ResponseWriter.WriteHeader(code)
 	encoder := json.NewEncoder(r.ResponseWriter)
@@ -177,11 +187,12 @@ func (r *HttpRequest) JSON(code int, obj interface{}) *HttpErrorMessage {
 	return nil
 }
 
-func (r *HttpRequest) NewError(err error, code int) *HttpErrorMessage {
+// NewError creates an HTTPErrorMessage
+func (r *HTTPRequest) NewError(err error, code int) *HTTPErrorMessage {
 	if code <= 0 {
 		code = 500
 	}
-	msg := HttpErrorMessage{
+	msg := HTTPErrorMessage{
 		Message: err.Error(),
 		Code:    code,
 		Stack:   make([]string, 0, 4),
@@ -197,7 +208,7 @@ func (r *HttpRequest) NewError(err error, code int) *HttpErrorMessage {
 	return &msg
 }
 
-func getMetadata(r *HttpRequest) *HttpErrorMessage {
+func getMetadata(r *HTTPRequest) *HTTPErrorMessage {
 	metadata := make(map[string]string)
 
 	err := r.Context.db.Transaction(func(tx *kvite.Tx) error {
@@ -218,7 +229,7 @@ func getMetadata(r *HttpRequest) *HttpErrorMessage {
 	return r.JSON(200, metadata)
 }
 
-func setMetadata(r *HttpRequest) *HttpErrorMessage {
+func setMetadata(r *HTTPRequest) *HTTPErrorMessage {
 	var metadata map[string]string
 
 	err := json.NewDecoder(r.Request.Body).Decode(&metadata)
