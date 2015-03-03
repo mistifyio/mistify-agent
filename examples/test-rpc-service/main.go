@@ -260,7 +260,12 @@ func main() {
 	}
 
 	test := &Test{}
-	s.RegisterService(test)
+	if err := s.RegisterService(test); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "rpc.Server.RegisterService",
+		}).Fatal(err)
+	}
 	s.HandleFunc("/snapshots/download", test.DownloadSnapshot)
 	if err = s.ListenAndServe(); err != nil {
 		log.WithFields(log.Fields{

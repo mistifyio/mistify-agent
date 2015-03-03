@@ -96,6 +96,6 @@ func (l *logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	b.WriteString("\n")
-	b.WriteTo(l.writer)
+	_, _ = b.WriteString("\n")
+	_, _ = b.WriteTo(l.writer)
 }

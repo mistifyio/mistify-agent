@@ -64,7 +64,10 @@ func (c *Client) DoRaw(request interface{}, rw http.ResponseWriter) {
 
 	if resp.StatusCode != 200 {
 		buf := new(bytes.Buffer)
-		buf.ReadFrom(resp.Body)
+		if _, err := buf.ReadFrom(resp.Body); err != nil {
+			http.Error(rw, err.Error(), 500)
+			return
+		}
 		http.Error(rw, buf.String(), resp.StatusCode)
 		return
 	}
