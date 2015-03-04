@@ -2,7 +2,7 @@ package client
 
 type (
 	// Guest is a guest virtual machine
-	// +gen * methods:"Where,Each,SortBy" containers:"Set"
+	// +gen * slice:"Where,Each,SortBy" set
 	Guest struct {
 		Id       string            `json:"id"`
 		Type     string            `json:"type,omitempty"`

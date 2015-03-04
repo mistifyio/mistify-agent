@@ -109,8 +109,8 @@ func (c *Client) doRequest(method, path string, input interface{}, expectedStatu
 }
 
 // ListGuests gets a list of guests
-func (c *Client) ListGuests() (Guests, error) {
-	guests := make(Guests, 0)
+func (c *Client) ListGuests() (GuestSlice, error) {
+	guests := make(GuestSlice, 0)
 	if err := c.doRequest("GET", "/guests", nil, 200, &guests); err != nil {
 		return nil, err
 	}
