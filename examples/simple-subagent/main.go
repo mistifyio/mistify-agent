@@ -15,6 +15,7 @@ import (
 )
 
 type (
+	// Simple is the basic struct for the simple service
 	Simple struct {
 		rand    *rand.Rand // random number generator
 		percent int        // how often to return an error

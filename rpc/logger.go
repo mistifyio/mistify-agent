@@ -35,7 +35,7 @@ type (
 	}
 )
 
-func NewLogger(w io.Writer, h http.Handler) *logger {
+func newLogger(w io.Writer, h http.Handler) *logger {
 	return &logger{
 		writer:  w,
 		handler: h,

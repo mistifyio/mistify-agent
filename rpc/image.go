@@ -20,7 +20,7 @@ type (
 		Device string `json:"device"` // Device in /dev to use
 	}
 
-	// Volume represents a ZFS Snapshot
+	// Snapshot represents a ZFS Snapshot
 	Snapshot struct {
 		Id   string `json:"id"`   // Unique ID
 		Size uint64 `json:"size"` // Size in MB
@@ -33,7 +33,7 @@ type (
 		Source string `json:"source"` // Source for fetches. Generally a URL
 	}
 
-	// ImageRequest is an image response from the Storage sub-agent
+	// ImageResponse is an image response from the Storage sub-agent
 	ImageResponse struct {
 		Images []*Image `json:"images"` //Image slice for gets and lists. An empty slice is generally used for "not found"
 	}
@@ -57,6 +57,7 @@ type (
 		DestroyMoreRecent bool   `json:"destroyMoreRecent"` // Destroy more recent snapshots when rolling back
 	}
 
+	// SnapshotResponse is a snapshot response for the Storage sub-agent
 	SnapshotResponse struct {
 		Snapshots []*Snapshot `json:"snapshots"` // Snapshot slice for gets and lists. An empty slice is generally used for "not found"
 	}

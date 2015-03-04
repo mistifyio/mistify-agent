@@ -16,6 +16,7 @@ import (
 )
 
 type (
+	// Test is the basic struct for the test service
 	Test struct {
 	}
 )
@@ -76,7 +77,7 @@ func (t *Test) Shutdown(r *http.Request, request *rpc.GuestRequest, response *rp
 	return nil
 }
 
-// Retrieve CPU metrics.  Currently, only one sub-agent service is called for this.
+// CpuMetrics retrieves CPU metrics.  Currently, only one sub-agent service is called for this.
 func (t *Test) CpuMetrics(r *http.Request, request *rpc.GuestMetricsRequest, response *rpc.GuestMetricsResponse) error {
 	*response = rpc.GuestMetricsResponse{
 		Guest: request.Guest,
@@ -88,7 +89,7 @@ func (t *Test) CpuMetrics(r *http.Request, request *rpc.GuestMetricsRequest, res
 	return nil
 }
 
-// Retrieve Disk metrics.  Currently, only one sub-agent service is called for this.
+// DiskMetrics retrieves Disk metrics.  Currently, only one sub-agent service is called for this.
 func (t *Test) DiskMetrics(r *http.Request, request *rpc.GuestMetricsRequest, response *rpc.GuestMetricsResponse) error {
 	*response = rpc.GuestMetricsResponse{
 		Guest: request.Guest,
@@ -102,7 +103,7 @@ func (t *Test) DiskMetrics(r *http.Request, request *rpc.GuestMetricsRequest, re
 	return nil
 }
 
-// Retrieve Network metrics.  Currently, only one sub-agent service is called for this.
+// NicMetrics retrieves Network metrics.  Currently, only one sub-agent service is called for this.
 func (t *Test) NicMetrics(r *http.Request, request *rpc.GuestMetricsRequest, response *rpc.GuestMetricsResponse) error {
 	*response = rpc.GuestMetricsResponse{
 		Guest: request.Guest,
@@ -116,6 +117,7 @@ func (t *Test) NicMetrics(r *http.Request, request *rpc.GuestMetricsRequest, res
 	return nil
 }
 
+// ListImages lists disk images
 func (t *Test) ListImages(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
@@ -131,6 +133,7 @@ func (t *Test) ListImages(r *http.Request, request *rpc.ImageRequest, response *
 	return nil
 }
 
+// GetImage retrieves a disk image
 func (t *Test) GetImage(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
@@ -146,6 +149,7 @@ func (t *Test) GetImage(r *http.Request, request *rpc.ImageRequest, response *rp
 	return nil
 }
 
+// DeleteImage deletes a disk image
 func (t *Test) DeleteImage(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
@@ -161,6 +165,7 @@ func (t *Test) DeleteImage(r *http.Request, request *rpc.ImageRequest, response 
 	return nil
 }
 
+// RequestImage requests the fetching of a new images
 func (t *Test) RequestImage(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
@@ -176,6 +181,7 @@ func (t *Test) RequestImage(r *http.Request, request *rpc.ImageRequest, response
 	return nil
 }
 
+// ListSnapshots retrieves a list of snapshots
 func (t *Test) ListSnapshots(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
@@ -188,6 +194,7 @@ func (t *Test) ListSnapshots(r *http.Request, request *rpc.SnapshotRequest, resp
 	return nil
 }
 
+// GetSnapshot gets a single snapshot
 func (t *Test) GetSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
@@ -200,6 +207,7 @@ func (t *Test) GetSnapshot(r *http.Request, request *rpc.SnapshotRequest, respon
 	return nil
 }
 
+// CreateSnapshot creates a new snapshot
 func (t *Test) CreateSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
@@ -212,6 +220,7 @@ func (t *Test) CreateSnapshot(r *http.Request, request *rpc.SnapshotRequest, res
 	return nil
 }
 
+// DeleteSnapshot deletes a snapshot
 func (t *Test) DeleteSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
@@ -224,6 +233,7 @@ func (t *Test) DeleteSnapshot(r *http.Request, request *rpc.SnapshotRequest, res
 	return nil
 }
 
+// RollbackSnapshot rolls the filesystem back to a snapshot
 func (t *Test) RollbackSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
@@ -236,6 +246,7 @@ func (t *Test) RollbackSnapshot(r *http.Request, request *rpc.SnapshotRequest, r
 	return nil
 }
 
+// DownloadSnapshot downloads a snapshot via streaming
 func (t *Test) DownloadSnapshot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	fmt.Fprint(w, "foobar")

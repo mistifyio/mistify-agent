@@ -13,7 +13,7 @@ import (
 type (
 	// Client is a simple JSON-RPC over HTTP client used by the agent.
 	Client struct {
-		Url string
+		URL string
 	}
 )
 
@@ -24,7 +24,7 @@ func NewClient(port uint, path string) (*Client, error) {
 	}
 	c := &Client{
 		//XXX: this seems wrong
-		Url: fmt.Sprintf("http://127.0.0.1:%d%s", port, path),
+		URL: fmt.Sprintf("http://127.0.0.1:%d%s", port, path),
 	}
 	return c, nil
 }
@@ -35,7 +35,7 @@ func (c *Client) Do(method string, request interface{}, response interface{}) er
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(c.Url, "application/json", bytes.NewReader(data))
+	resp, err := http.Post(c.URL, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (c *Client) DoRaw(request interface{}, rw http.ResponseWriter) {
 		http.Error(rw, err.Error(), 500)
 		return
 	}
-	resp, err := http.Post(c.Url, "application/json", bytes.NewReader(data))
+	resp, err := http.Post(c.URL, "application/json", bytes.NewReader(data))
 	if err != nil {
 		http.Error(rw, err.Error(), 500)
 		return
