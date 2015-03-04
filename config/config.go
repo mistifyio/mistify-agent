@@ -10,7 +10,7 @@ type (
 	// ActionType describes synchronicity of an action
 	ActionType int
 
-	// Service is an http service
+	// Service is an HTTP service
 	Service struct {
 		MaxPending uint   `json:"max_pending"`
 		Port       uint   `json:"port"`
