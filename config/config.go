@@ -7,25 +7,30 @@ import (
 )
 
 type (
+	// ActionType describes synchronicity of an action
 	ActionType int
 
+	// Service is an HTTP service
 	Service struct {
 		MaxPending uint   `json:"max_pending"`
 		Port       uint   `json:"port"`
 		Path       string `json:"path"`
 	}
 
+	// Stage is a single step for an action
 	Stage struct {
 		Service string            `json:"service"`
 		Method  string            `json:"method"`
 		Args    map[string]string `json:"args"`
 	}
 
+	// Action is a set of stages and how they should be handled
 	Action struct {
 		Type   ActionType
 		Stages []Stage `json:"stages"`
 	}
 
+	// Config contains all of the configuration data
 	Config struct {
 		Actions  map[string]Action  `json:"actions"`
 		Services map[string]Service `json:"services"`
@@ -34,14 +39,17 @@ type (
 )
 
 const (
+	// InfoAction is for synchronous information retrieval in JSON format
 	InfoAction ActionType = iota
+	// StreamAction is for synchronous data streaming
 	StreamAction
+	// AsyncAction is for asynchronous actions
 	AsyncAction
 )
 
 var (
-	// Valid actions and their associated type
-	ValidActions map[string]ActionType = map[string]ActionType{
+	// ValidActions is a whitelist of configurable actions and their types
+	ValidActions = map[string]ActionType{
 		"create":           AsyncAction,
 		"delete":           AsyncAction,
 		"reboot":           AsyncAction,
@@ -65,6 +73,7 @@ var (
 	}
 )
 
+// NewConfig creates a new Config
 func NewConfig() *Config {
 	c := &Config{
 		Actions:  make(map[string]Action),
@@ -88,6 +97,7 @@ func (stage *Stage) validate(prefix string) error {
 	return nil
 }
 
+// AddConfig loads a configuration file
 func (c *Config) AddConfig(path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -136,6 +146,7 @@ func (c *Config) AddConfig(path string) error {
 	return nil
 }
 
+// Fixup does a bit of validation and initializtion
 func (c *Config) Fixup() error {
 	for name, action := range c.Actions {
 		for _, stage := range action.Stages {

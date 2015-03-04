@@ -35,7 +35,7 @@ type (
 	}
 )
 
-func NewLogger(w io.Writer, h http.Handler) *logger {
+func newLogger(w io.Writer, h http.Handler) *logger {
 	return &logger{
 		writer:  w,
 		handler: h,
@@ -96,6 +96,6 @@ func (l *logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	b.WriteString("\n")
-	b.WriteTo(l.writer)
+	_, _ = b.WriteString("\n")
+	_, _ = b.WriteTo(l.writer)
 }

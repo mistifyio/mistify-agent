@@ -1,6 +1,7 @@
 package client
 
 type (
+	// Guest is a guest virtual machine
 	// +gen * methods:"Where,Each,SortBy" containers:"Set"
 	Guest struct {
 		Id       string            `json:"id"`
@@ -14,6 +15,7 @@ type (
 		Metadata map[string]string `json:"metadata,omitempty"`
 	}
 
+	// Nic is a guest network interface controller
 	Nic struct {
 		Name    string `json:"name,omitempty"`
 		Network string `json:"network"`
@@ -25,6 +27,7 @@ type (
 		Device  string `json:"device,omitempty"`
 	}
 
+	// Disk is a guest storage disk
 	Disk struct {
 		Bus    string `json:"bus"`    // the type of disk device to emulate. "ide", "scsi", "sata", virtio"
 		Device string `json:"device"` // target device inside the guest, ie "vda", "sda", "hda", etc
@@ -34,6 +37,7 @@ type (
 		Source string `json:"source"` // the device name: /dev/zvol/...
 	}
 
+	// GuestDiskMetrics is a set of metrics on a guest's storage disk
 	GuestDiskMetrics struct {
 		Disk       string  `json:"disk"`
 		ReadOps    int64   `json:"read_ops"`
@@ -46,11 +50,13 @@ type (
 		FlushTime  float64 `json:"flush_time"`
 	}
 
+	// GuestCpuMetrics is a set of metrics on a guest's cpu
 	GuestCpuMetrics struct {
 		CpuTime  float64 `json:"cpu_time"`
 		VcpuTime float64 `json:"vcpu_time"`
 	}
 
+	// GuestNicMetrics is a set of metrics on a guests's nic
 	GuestNicMetrics struct {
 		Name      string `json:"name"`
 		RxBytes   int64  `json:"rx_bytes"`

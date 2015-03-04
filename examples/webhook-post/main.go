@@ -116,7 +116,12 @@ func main() {
 			Timeout: time.Second * 5,
 		},
 	}
-	s.RegisterService(w)
+	if err := s.RegisterService(w); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "rpc.Server.RegisterService",
+		}).Fatal(err)
+	}
 	if err = s.ListenAndServe(); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,

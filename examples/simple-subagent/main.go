@@ -15,6 +15,7 @@ import (
 )
 
 type (
+	// Simple is the basic struct for the simple service
 	Simple struct {
 		rand    *rand.Rand // random number generator
 		percent int        // how often to return an error
@@ -61,7 +62,12 @@ func main() {
 		}).Fatal(err)
 	}
 
-	server.RegisterService(&s)
+	if err := server.RegisterService(&s); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "rpc.Server.RegisterService",
+		}).Fatal(err)
+	}
 	if err = server.ListenAndServe(); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,

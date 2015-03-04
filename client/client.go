@@ -1,4 +1,4 @@
-// Packege client provides a simple client for the Mistify Agent
+// Package client provides a simple client for the Mistify Agent
 package client
 
 import (
@@ -21,11 +21,12 @@ type (
 		// Scheme is the URI scheme for the Mistify Agent
 		Scheme string
 
-		// HttpClient is the client to use. Default will be
+		// HTTPClient is the client to use. Default will be
 		// used if not provided.
-		HttpClient *http.Client
+		HTTPClient *http.Client
 	}
 
+	// Client for the Mistify Agent
 	Client struct {
 		Config Config
 	}
@@ -36,7 +37,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		Address: "127.0.0.1:8080",
 		Scheme:  "http",
-		HttpClient: &http.Client{
+		HTTPClient: &http.Client{
 			Timeout: time.Duration(5 * time.Second),
 		},
 	}
@@ -54,8 +55,8 @@ func NewClient(config *Config) (*Client, error) {
 		config.Scheme = defConfig.Scheme
 	}
 
-	if config.HttpClient == nil {
-		config.HttpClient = defConfig.HttpClient
+	if config.HTTPClient == nil {
+		config.HTTPClient = defConfig.HTTPClient
 	}
 
 	client := &Client{
@@ -89,7 +90,7 @@ func (c *Client) doRequest(method, path string, input interface{}, expectedStatu
 		return err
 	}
 
-	resp, err := c.Config.HttpClient.Do(req)
+	resp, err := c.Config.HTTPClient.Do(req)
 
 	if err != nil {
 		return err
@@ -107,6 +108,7 @@ func (c *Client) doRequest(method, path string, input interface{}, expectedStatu
 	return err
 }
 
+// ListGuests gets a list of guests
 func (c *Client) ListGuests() (Guests, error) {
 	guests := make(Guests, 0)
 	if err := c.doRequest("GET", "/guests", nil, 200, &guests); err != nil {
@@ -116,6 +118,7 @@ func (c *Client) ListGuests() (Guests, error) {
 	return guests, nil
 }
 
+// GetGuest requests creation of a guest
 func (c *Client) GetGuest(id string) (*Guest, error) {
 	var g Guest
 	if err := c.doRequest("GET", filepath.Join("/guests", id), nil, 200, &g); err != nil {
@@ -124,6 +127,7 @@ func (c *Client) GetGuest(id string) (*Guest, error) {
 	return &g, nil
 }
 
+// CreateGuest requests creation of a new guest
 func (c *Client) CreateGuest(guest *Guest) (*Guest, error) {
 	var g Guest
 	if err := c.doRequest("POST", "/guests", guest, 202, &g); err != nil {
