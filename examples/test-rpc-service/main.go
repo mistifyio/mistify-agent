@@ -12,6 +12,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/rpc"
+	logx "github.com/mistifyio/mistify-logrus-ext"
 	flag "github.com/spf13/pflag"
 )
 
@@ -260,7 +261,13 @@ func main() {
 	flag.UintVarP(&port, "port", "p", 9999, "listen port")
 	flag.Parse()
 
-	log.SetFormatter(&log.JSONFormatter{})
+	err := logx.DefaultSetup("info")
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "logx.DefaultSetup",
+		}).Fatal("failed to set up logging")
+	}
 
 	s, err := rpc.NewServer(port)
 	if err != nil {
