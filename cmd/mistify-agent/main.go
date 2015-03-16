@@ -16,11 +16,11 @@ func main() {
 	flag.StringVarP(&configFile, "config-file", "c", "", "config file")
 	flag.Parse()
 
-	err := logx.DefaultSetup(logLevel)
-	if err != nil {
+	if err := logx.DefaultSetup(logLevel); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 			"func":  "logx.DefaultSetup",
+			"level": logLevel,
 		}).Fatal("failed to set up logging")
 	}
 
@@ -38,7 +38,7 @@ func main() {
 		}).Fatal("failed to add config")
 	}
 
-	if err = conf.Fixup(); err != nil {
+	if err := conf.Fixup(); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 			"func":  "config.Fixup",
