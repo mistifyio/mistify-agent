@@ -261,8 +261,7 @@ func main() {
 	flag.UintVarP(&port, "port", "p", 9999, "listen port")
 	flag.Parse()
 
-	err := logx.DefaultSetup("info")
-	if err != nil {
+	if err := logx.DefaultSetup("info"); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 			"func":  "logx.DefaultSetup",

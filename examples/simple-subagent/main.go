@@ -44,8 +44,7 @@ func main() {
 	flag.UintVarP(&percent, "percent", "c", 50, "Percentage to return an error")
 	flag.Parse()
 
-	err := logx.DefaultSetup("info")
-	if err != nil {
+	if err := logx.DefaultSetup("info"); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 			"func":  "logx.DefaultSetup",
