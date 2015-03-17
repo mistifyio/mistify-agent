@@ -42,8 +42,8 @@ func (c *Client) Do(method string, request interface{}, response interface{}) er
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 400 {
-		buf := new(bytes.Buffer)
+	if resp.StatusCode >= http.StatusBadRequest {
+		var buf bytes.Buffer
 		if _, err := buf.ReadFrom(resp.Body); err != nil {
 			return err
 		}
