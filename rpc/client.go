@@ -3,6 +3,7 @@ package rpc
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -40,6 +41,14 @@ func (c *Client) Do(method string, request interface{}, response interface{}) er
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		buf := new(bytes.Buffer)
+		if _, err := buf.ReadFrom(resp.Body); err != nil {
+			return err
+		}
+		return errors.New(buf.String())
+	}
 
 	err = rpcJSON.DecodeClientResponse(resp.Body, &response)
 	if err != nil {
