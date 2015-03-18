@@ -45,7 +45,7 @@ func NewServer(port uint) (*Server, error) {
 
 	s.Chain = alice.New(
 		func(h http.Handler) http.Handler {
-			return newLogger(os.Stdout, h)
+			return newLogger(h)
 		},
 		handlers.CompressHandler,
 		func(h http.Handler) http.Handler {
