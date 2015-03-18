@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"io"
 	"net"
 	"net/http"
 	"time"
@@ -22,7 +21,7 @@ type (
 	}
 )
 
-func newLogger(w io.Writer, h http.Handler) *logger {
+func newLogger(h http.Handler) *logger {
 	return &logger{
 		handler: h,
 	}
