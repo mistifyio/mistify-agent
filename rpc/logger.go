@@ -1,19 +1,17 @@
 package rpc
 
 import (
-	"bytes"
-	"encoding/json"
 	"io"
 	"net"
 	"net/http"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/context"
 )
 
 type (
 	logger struct {
-		writer  io.Writer
 		handler http.Handler
 	}
 
@@ -22,22 +20,10 @@ type (
 		status int
 		size   int
 	}
-
-	logEntry struct {
-		Method    string    `json:"method"`
-		Duration  float64   `json:"duration"`
-		URL       string    `json:"url"`
-		Time      time.Time `json:"time"`
-		Status    int       `json:"status"`
-		Size      int       `json:"size"`
-		UserAgent string    `json:"user_agent"`
-		Client    string    `json:"client"`
-	}
 )
 
 func newLogger(w io.Writer, h http.Handler) *logger {
 	return &logger{
-		writer:  w,
 		handler: h,
 	}
 }
@@ -80,22 +66,13 @@ func (l *logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		host = r.RemoteAddr
 	}
 
-	entry := logEntry{
-		Method:    method,
-		Duration:  time.Since(now).Seconds(),
-		URL:       r.URL.RequestURI(),
-		Time:      now,
-		Status:    h.status,
-		Size:      h.size,
-		UserAgent: r.UserAgent(),
-		Client:    host,
-	}
-	b := &bytes.Buffer{}
-	e := json.NewEncoder(b)
-	err = e.Encode(&entry)
-	if err != nil {
-		return
-	}
-	_, _ = b.WriteString("\n")
-	_, _ = b.WriteTo(l.writer)
+	log.WithFields(log.Fields{
+		"method":    method,
+		"duration":  time.Since(now).Seconds(),
+		"url":       r.URL.RequestURI(),
+		"status":    h.status,
+		"size":      h.size,
+		"userAgent": r.UserAgent(),
+		"client":    host,
+	}).Info("request processed")
 }
