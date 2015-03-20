@@ -159,6 +159,86 @@
                     "service": "testDownload"
                 }
             ]
+        },
+        "listContainerImages": {
+            "stages": [
+                {
+                    "method": "Test.ListContainerImages",
+                    "service": "test"
+                }
+            ]
+        },
+        "getContainerImage": {
+            "stages": [
+                {
+                    "method": "Test.GetContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
+        "deleteContainerImage": {
+            "stages": [
+                {
+                    "method": "Test.DeleteContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
+        "pullContainerImage": {
+            "stages": [
+                {
+                    "method": "Test.PullContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
+        "listContainers": {
+            "stages": [
+                {
+                    "method": "Test.ListContainers",
+                    "service": "test"
+                }
+            ]
+        },
+        "getContainer": {
+            "stages": [
+                {
+                    "method": "Test.GetContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "createContainer": {
+            "stages": [
+                {
+                    "method": "Test.CreateContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "startContainer": {
+            "stages": [
+                {
+                    "method": "Test.StartContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "stopContainer": {
+            "stages": [
+                {
+                    "method": "Test.StopContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "deleteContainer": {
+            "stages": [
+                {
+                    "method": "Test.DeleteContainer",
+                    "service": "test"
+                }
+            ]
         }
     },
     "services": {
