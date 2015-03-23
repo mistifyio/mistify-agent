@@ -70,7 +70,7 @@ var (
 		"deleteSnapshot":       AsyncAction,
 		"rollbackSnapshot":     AsyncAction,
 		"downloadSnapshot":     StreamAction,
-		"listContainerImage":   InfoAction,
+		"listContainerImages":  InfoAction,
 		"getContainerImage":    InfoAction,
 		"deleteContainerImage": AsyncAction,
 		"pullContainerImage":   AsyncAction,
