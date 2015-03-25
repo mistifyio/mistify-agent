@@ -295,52 +295,62 @@ func (t *Test) DeleteContainerImage(r *http.Request, request *rpc.ContainerImage
 	return nil
 }
 
-// ListContainers lists containers
-func (t *Test) ListContainers(h *http.Request, request *rpc.ContainerRequest, response *rpc.ContainerResponse) error {
-	response.Containers = []*docker.Container{
-		&docker.Container{
-			ID: "foobar",
-		},
-	}
-	return nil
-}
-
-// GetContainer gets a container
-func (t *Test) GetContainer(h *http.Request, request *rpc.ContainerRequest, response *rpc.ContainerResponse) error {
-	response.Containers = []*docker.Container{
-		&docker.Container{
-			ID: "foobar",
-		},
-	}
-	return nil
-}
-
-// CreateContainer gets a container
-func (t *Test) CreateContainer(h *http.Request, request *rpc.ContainerRequest, response *rpc.ContainerResponse) error {
-	response.Containers = []*docker.Container{
-		&docker.Container{
-			ID: "foobar",
-		},
+// CreateContainer creates a container
+func (t *Test) CreateContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &rpcClient.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
 	}
 	return nil
 }
 
 // StartContainer starts a container
-func (t *Test) StartContainer(h *http.Request, request *rpc.ContainerRequest, response *rpc.ContainerResponse) error {
-	response.Containers = []*docker.Container{
-		&docker.Container{
-			ID: "foobar",
-		},
+func (t *Test) StartContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &rpcClient.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
+	}
+	return nil
+}
+
+// RebootContainer reboots a container
+func (t *Test) RebootContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &rpcClient.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
+	}
+	return nil
+}
+
+// RestartContainer reboots a container
+func (t *Test) RestartContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &rpcClient.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
 	}
 	return nil
 }
 
 // StopContainer stops a container
-func (t *Test) StopContainer(h *http.Request, request *rpc.ContainerRequest, response *rpc.ContainerResponse) error {
-	response.Containers = []*docker.Container{
-		&docker.Container{
-			ID: "foobar",
-		},
+func (t *Test) StopContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &rpcClient.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
+	}
+	return nil
+}
+
+// DeleteContainer deletes a container
+func (t *Test) DeleteContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &rpcClient.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
 	}
 	return nil
 }

@@ -192,23 +192,7 @@
                 }
             ]
         },
-        "listContainers": {
-            "stages": [
-                {
-                    "method": "Test.ListContainers",
-                    "service": "test"
-                }
-            ]
-        },
-        "getContainer": {
-            "stages": [
-                {
-                    "method": "Test.GetContainer",
-                    "service": "test"
-                }
-            ]
-        },
-        "createContainer": {
+        "containerCreate": {
             "stages": [
                 {
                     "method": "Test.CreateContainer",
@@ -216,7 +200,7 @@
                 }
             ]
         },
-        "startContainer": {
+        "containerStart": {
             "stages": [
                 {
                     "method": "Test.StartContainer",
@@ -224,7 +208,23 @@
                 }
             ]
         },
-        "stopContainer": {
+        "containerReboot": {
+            "stages": [
+                {
+                    "method": "Test.RebootContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerRestart": {
+            "stages": [
+                {
+                    "method": "Test.RestartContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerShutdown": {
             "stages": [
                 {
                     "method": "Test.StopContainer",
@@ -232,14 +232,54 @@
                 }
             ]
         },
-        "deleteContainer": {
+        "containerPoweroff": {
+            "stages": [
+                {
+                    "method": "Test.StopContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerDelete": {
             "stages": [
                 {
                     "method": "Test.DeleteContainer",
                     "service": "test"
                 }
             ]
-        }
+        },
+        "containerListImages": {
+            "stages": [
+                {
+                    "method": "Test.ListContainerImages",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerGetImage": {
+            "stages": [
+                {
+                    "method": "Test.GetContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerDeleteImage": {
+            "stages": [
+                {
+                    "method": "Test.DeleteContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerFetchImage": {
+            "stages": [
+                {
+                    "method": "Test.PullContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
     },
     "services": {
         "test": {

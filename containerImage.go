@@ -10,7 +10,7 @@ import (
 func listContainerImages(r *HTTPRequest) *HTTPErrorMessage {
 	response := &rpc.ContainerImageResponse{}
 	request := &rpc.ContainerImageRequest{}
-	action, err := r.Context.GetAction("listContainerImages")
+	action, err := r.Context.GetAction("containerListImages")
 	if err != nil {
 		return r.NewError(err, http.StatusNotFound)
 	}
@@ -26,7 +26,7 @@ func getContainerImage(r *HTTPRequest) *HTTPErrorMessage {
 	request := &rpc.ContainerImageRequest{
 		ID: r.Parameter("id"),
 	}
-	action, err := r.Context.GetAction("getContainerImage")
+	action, err := r.Context.GetAction("containerGetImage")
 	if err != nil {
 		return r.NewError(err, http.StatusNotFound)
 	}
@@ -48,7 +48,7 @@ func deleteContainerImage(r *HTTPRequest) *HTTPErrorMessage {
 		ID: r.Parameter("id"),
 	}
 
-	action, err := r.Context.GetAction("deleteContainerImage")
+	action, err := r.Context.GetAction("containerDeleteImage")
 	if err != nil {
 		return r.NewError(err, http.StatusNotFound)
 	}
@@ -72,7 +72,7 @@ func pullContainerImage(r *HTTPRequest) *HTTPErrorMessage {
 		return r.NewError(err, http.StatusBadRequest)
 	}
 
-	action, err := r.Context.GetAction("pullContainerImage")
+	action, err := r.Context.GetAction("containerFetchImage")
 	if err != nil {
 		return r.NewError(err, http.StatusNotFound)
 	}

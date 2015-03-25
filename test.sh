@@ -74,18 +74,6 @@ CIID=$(http POST container_images --data-binary '{"name":"busybox"}' | jq -r .id
 
 http GET container_images/$CIID
 
-http GET containers
-
-CID=$(http POST containers --data-binary '{"opts":{"config":{"image":"busybox","cmd":["sleep","5"]}}}' | jq -r .id)
-
-http GET containers/$CID
-
-http POST containers/$CID/start
-
-http POST containers/$CID/stop
-
-http DELETE containers/$CID
-
 http DELETE container_images/$CIID
 
 kill $AGENT_PID

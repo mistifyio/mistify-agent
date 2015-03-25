@@ -1,0 +1,276 @@
+{
+    "actions": {
+        "create": {
+            "stages": [
+                {
+                    "method": "ImageStore.CreateGuestDisks",
+                    "service": "storage"
+                },
+                {
+                    "method": "Libvirt.CreateGuest",
+                    "service": "libvirt"
+                }
+            ]
+        },
+        "containerCreate": {
+            "stages": [
+                {
+                    "method": "MDocker.CreateContainer",
+                    "service": "mdocker"
+                },
+                {
+                    "method": "MDocker.StartContainer",
+                    "service": "mdocker"
+                }
+            ]
+        },
+        "delete": {
+            "stages": [
+                {
+                    "method": "Libvirt.Delete",
+                    "service": "libvirt"
+                },
+                {
+                    "method": "ImageStore.DeleteGuestsDisks",
+                    "service": "storage"
+                }
+            ]
+        },
+        "containerDelete": {
+            "stages": [
+                {
+                    "method": "MDocker.StopContainer",
+                    "service": "mdocker"
+                },
+                {
+                    "method": "MDocker.DeleteContainer",
+                    "service": "mdocker"
+                }
+            ]
+        },
+        "reboot": {
+            "stages": [
+                {
+                    "method": "Libvirt.Reboot",
+                    "service": "libvirt"
+                }
+            ]
+        },
+        "containerReboot": {
+            "stages": [
+                {
+                    "method": "MDocker.RebootContainer",
+                    "service": "mdocker"
+                }
+            ]
+        },
+        "restart": {
+            "stages": [
+                {
+                    "method": "Libvirt.Restart",
+                    "service": "libvirt"
+                }
+            ]
+        },
+        "containerRestart": {
+            "stages": [
+                {
+                    "method": "MDocker.RestartContainer",
+                    "service": "mdocker"
+                }
+            ]
+        },
+        "poweroff": {
+            "stages": [
+                {
+                    "method": "Libvirt.Poweroff",
+                    "service": "libvirt"
+                }
+            ]
+        },
+        "containerPoweroff": {
+            "stages": [
+                {
+                    "method": "MDocker.StopContainer",
+                    "service": "mdocker"
+                }
+            ]
+        },
+        "shutdown": {
+            "stages": [
+                {
+                    "method": "Libvirt.Shutdown",
+                    "service": "libvirt"
+                }
+            ]
+        },
+        "containerShutdown": {
+            "stages": [
+                {
+                    "method": "MDocker.StopContainer",
+                    "service": "mdocker"
+                }
+            ]
+        },
+        "run": {
+            "stages": [
+                {
+                    "method": "Libvirt.Run",
+                    "service": "libvirt"
+                }
+            ]
+        },
+        "cpuMetrics": {
+            "stages": [
+                {
+                    "method": "Libvirt.CpuMetrics",
+                    "service": "libvirt"
+                }
+            ]
+        },
+        "nicMetrics": {
+            "stages": [
+                {
+                    "method": "Libvirt.NicMetrics",
+                    "service": "libvirt"
+                }
+            ]
+        },
+        "diskMetrics": {
+            "stages": [
+                {
+                    "method": "Libvirt.DiskMetrics",
+                    "service": "libvirt"
+                }
+            ]
+        },
+        "listImages": {
+            "stages": [
+                {
+                    "method": "ImageStore.ListImages",
+                    "service": "storage"
+                }
+            ]
+        },
+        "containerListImages": {
+            "stages": [
+                {
+                    "method": "MDocker.ListImages",
+                    "service": "mdocker"
+                }
+            ]
+        },
+        "getImage": {
+            "stages": [
+                {
+                    "method": "ImageStore.GetImages",
+                    "service": "storage"
+                }
+            ]
+        },
+        "containerGetImage": {
+            "stages": [
+                {
+                    "method": "MDocker.GetImage",
+                    "service": "mdocker"
+                }
+            ]
+        },
+        "deleteImage": {
+            "stages": [
+                {
+                    "method": "ImageStore.DeleteImage",
+                    "service": "storage"
+                }
+            ]
+        },
+        "containerDeleteImage": {
+            "stages": [
+                {
+                    "method": "MDocker.DeleteImage",
+                    "service": "mdocker"
+                }
+            ]
+        },
+        "fetchImage": {
+            "stages": [
+                {
+                    "method": "ImageStore.RequestImage",
+                    "service": "storage"
+                }
+            ]
+        },
+        "containerFetchImage": {
+            "stages": [
+                {
+                    "method": "MDocker.PullImage",
+                    "service": "mdocker"
+                }
+            ]
+        },
+        "listSnapshots": {
+            "stages": [
+                {
+                    "method": "ImageStore.ListSnapshots",
+                    "service": "storage"
+                }
+            ]
+        },
+        "getSnapshot": {
+            "stages": [
+                {
+                    "method": "ImageStore.GetSnapshot",
+                    "service": "storage"
+                }
+            ]
+        },
+        "createSnapshot": {
+            "stages": [
+                {
+                    "method": "ImageStore.CreateSnapshot",
+                    "service": "storage"
+                }
+            ]
+        },
+        "deleteSnapshot": {
+            "stages": [
+                {
+                    "method": "ImageStore.DeleteSnapshot",
+                    "service": "storage"
+                }
+            ]
+        },
+        "rollbackSnapshot": {
+            "stages": [
+                {
+                    "method": "ImageStore.RollbackSnapshot",
+                    "service": "storage"
+                }
+            ]
+        },
+        "downloadSnapshot": {
+            "stages": [
+                {
+                    "method": "ImageStore.DownlaodSnapshot",
+                    "service": "storageDownload"
+                }
+            ]
+        }
+    },
+    "dbpath": "/mistify/.agent.db",
+    "services": {
+        "libvirt": {
+            "port": 20001
+        },
+        "mdocker": {
+            "port": 30001
+        },
+        "storage": {
+            "port": 16000
+        },
+        "storageDownload": {
+            "path": "/snapshots/download",
+            "port": 16000
+        }
+    }
+}
