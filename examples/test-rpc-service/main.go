@@ -297,7 +297,7 @@ func (t *Test) DeleteContainerImage(r *http.Request, request *rpc.ContainerImage
 
 // CreateContainer creates a container
 func (t *Test) CreateContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
-	response.Guest = &rpcClient.Guest{
+	response.Guest = &client.Guest{
 		Id:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
@@ -307,7 +307,7 @@ func (t *Test) CreateContainer(h *http.Request, request *rpc.GuestRequest, respo
 
 // StartContainer starts a container
 func (t *Test) StartContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
-	response.Guest = &rpcClient.Guest{
+	response.Guest = &client.Guest{
 		Id:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
@@ -317,7 +317,7 @@ func (t *Test) StartContainer(h *http.Request, request *rpc.GuestRequest, respon
 
 // RebootContainer reboots a container
 func (t *Test) RebootContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
-	response.Guest = &rpcClient.Guest{
+	response.Guest = &client.Guest{
 		Id:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
@@ -327,7 +327,7 @@ func (t *Test) RebootContainer(h *http.Request, request *rpc.GuestRequest, respo
 
 // RestartContainer reboots a container
 func (t *Test) RestartContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
-	response.Guest = &rpcClient.Guest{
+	response.Guest = &client.Guest{
 		Id:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
@@ -337,7 +337,7 @@ func (t *Test) RestartContainer(h *http.Request, request *rpc.GuestRequest, resp
 
 // StopContainer stops a container
 func (t *Test) StopContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
-	response.Guest = &rpcClient.Guest{
+	response.Guest = &client.Guest{
 		Id:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
@@ -347,20 +347,10 @@ func (t *Test) StopContainer(h *http.Request, request *rpc.GuestRequest, respons
 
 // DeleteContainer deletes a container
 func (t *Test) DeleteContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
-	response.Guest = &rpcClient.Guest{
+	response.Guest = &client.Guest{
 		Id:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
-	}
-	return nil
-}
-
-// DeleteContainer deletes a container
-func (t *Test) DeleteContainer(h *http.Request, request *rpc.ContainerRequest, response *rpc.ContainerResponse) error {
-	response.Containers = []*docker.Container{
-		&docker.Container{
-			ID: "foobar",
-		},
 	}
 	return nil
 }

@@ -62,7 +62,7 @@ func prefixedActionName(gType, actionName string) string {
 		return actionName
 	}
 	r, n := utf8.DecodeRuneInString(actionName)
-	return "container" + string(unicode.ToUpper(r)) + s[n:]
+	return "container" + string(unicode.ToUpper(r)) + actionName[n:]
 }
 
 func listGuests(r *HTTPRequest) *HTTPErrorMessage {
@@ -98,8 +98,7 @@ func listGuests(r *HTTPRequest) *HTTPErrorMessage {
 // NOTE: The config for create should include stages for startup
 func createGuest(r *HTTPRequest) *HTTPErrorMessage {
 	g := &client.Guest{}
-	err = json.NewDecoder(r.Request.Body).Decode(g)
-	if err != nil {
+	if err := json.NewDecoder(r.Request.Body).Decode(g); err != nil {
 		return r.NewError(err, 400)
 	}
 	if g.Id != "" {
@@ -257,7 +256,8 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 		g := r.Guest
 		runner := r.GuestRunner
 
-		action, err := r.Context.GetAction(prefixedActionName(g.Type, actionName))
+		actionName := prefixedActionName(g.Type, actionName)
+		action, err := r.Context.GetAction(actionName)
 		if err != nil {
 			return r.NewError(err, 404)
 		}
@@ -285,6 +285,7 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 			if err != nil {
 				return
 			}
+			fmt.Println("ACTION:", actionName, "PREFIXED DELETE:", prefixedActionName(g.Type, "delete"))
 			if actionName == prefixedActionName(g.Type, "delete") {
 				if err := r.Context.DeleteGuest(g); err != nil {
 					log.WithFields(log.Fields{

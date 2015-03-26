@@ -48,6 +48,14 @@
                 }
             ]
         },
+        "containerStart": {
+            "stages": [
+                {
+                    "method":"MDocker.StartContainer",
+                    "service": "mdocker"
+                }
+            ]
+        },
         "reboot": {
             "stages": [
                 {

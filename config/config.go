@@ -54,6 +54,7 @@ var (
 		"containerCreate":      AsyncAction,
 		"delete":               AsyncAction,
 		"containerDelete":      AsyncAction,
+		"containerStart":       AsyncAction,
 		"reboot":               AsyncAction,
 		"containerReboot":      AsyncAction,
 		"restart":              AsyncAction,
