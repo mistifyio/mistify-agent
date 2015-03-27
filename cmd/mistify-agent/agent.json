@@ -171,7 +171,7 @@
         "getImage": {
             "stages": [
                 {
-                    "method": "ImageStore.GetImages",
+                    "method": "ImageStore.GetImage",
                     "service": "storage"
                 }
             ]
