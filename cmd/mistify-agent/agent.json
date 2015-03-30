@@ -259,7 +259,7 @@
         "downloadSnapshot": {
             "stages": [
                 {
-                    "method": "ImageStore.DownlaodSnapshot",
+                    "method": "ImageStore.DownloadSnapshot",
                     "service": "storageDownload"
                 }
             ]
