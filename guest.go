@@ -285,7 +285,6 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 			if err != nil {
 				return
 			}
-			fmt.Println("ACTION:", actionName, "PREFIXED DELETE:", prefixedActionName(g.Type, "delete"))
 			if actionName == prefixedActionName(g.Type, "delete") {
 				if err := r.Context.DeleteGuest(g); err != nil {
 					log.WithFields(log.Fields{

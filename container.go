@@ -81,6 +81,7 @@ func startContainer(r *HTTPRequest) *HTTPErrorMessage {
 
 	return r.JSON(http.StatusAccepted, response.Containers[0])
 }
+
 func stopContainer(r *HTTPRequest) *HTTPErrorMessage {
 	response := &rpc.ContainerResponse{}
 	request := &rpc.ContainerRequest{
@@ -98,6 +99,7 @@ func stopContainer(r *HTTPRequest) *HTTPErrorMessage {
 
 	return r.JSON(http.StatusAccepted, response.Containers[0])
 }
+
 func deleteContainer(r *HTTPRequest) *HTTPErrorMessage {
 	response := &rpc.ContainerResponse{}
 	request := &rpc.ContainerRequest{
