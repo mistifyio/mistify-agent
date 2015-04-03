@@ -120,6 +120,12 @@ func Run(ctx *Context, address string) error {
 		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/download", prefix), chain.GuestRunnerWrapper(downloadSnapshot)).Methods("GET")
 	}
 
+	// Container Images
+	r.HandleFunc("/container_images", chain.RequestWrapper(listContainerImages)).Methods("GET")
+	r.HandleFunc("/container_images", chain.RequestWrapper(pullContainerImage)).Methods("POST")
+	r.HandleFunc("/container_images/{id}", chain.RequestWrapper(getContainerImage)).Methods("GET")
+	r.HandleFunc("/container_images/{id}", chain.RequestWrapper(deleteContainerImage)).Methods("DELETE")
+
 	/*
 		guest := guests.PathPrefix("/{id}").Subrouter()
 		guest.HandleFunc("/vnc", RequestWrapper(ctx, vncGuest))

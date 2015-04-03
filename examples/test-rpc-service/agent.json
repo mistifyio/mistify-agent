@@ -159,7 +159,127 @@
                     "service": "testDownload"
                 }
             ]
-        }
+        },
+        "listContainerImages": {
+            "stages": [
+                {
+                    "method": "Test.ListContainerImages",
+                    "service": "test"
+                }
+            ]
+        },
+        "getContainerImage": {
+            "stages": [
+                {
+                    "method": "Test.GetContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
+        "deleteContainerImage": {
+            "stages": [
+                {
+                    "method": "Test.DeleteContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
+        "pullContainerImage": {
+            "stages": [
+                {
+                    "method": "Test.PullContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerCreate": {
+            "stages": [
+                {
+                    "method": "Test.CreateContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerStart": {
+            "stages": [
+                {
+                    "method": "Test.StartContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerReboot": {
+            "stages": [
+                {
+                    "method": "Test.RebootContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerRestart": {
+            "stages": [
+                {
+                    "method": "Test.RestartContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerShutdown": {
+            "stages": [
+                {
+                    "method": "Test.StopContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerPoweroff": {
+            "stages": [
+                {
+                    "method": "Test.StopContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerDelete": {
+            "stages": [
+                {
+                    "method": "Test.DeleteContainer",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerListImages": {
+            "stages": [
+                {
+                    "method": "Test.ListContainerImages",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerGetImage": {
+            "stages": [
+                {
+                    "method": "Test.GetContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerDeleteImage": {
+            "stages": [
+                {
+                    "method": "Test.DeleteContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
+        "containerFetchImage": {
+            "stages": [
+                {
+                    "method": "Test.PullContainerImage",
+                    "service": "test"
+                }
+            ]
+        },
     },
     "services": {
         "test": {

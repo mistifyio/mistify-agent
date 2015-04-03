@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"unicode"
+	"unicode/utf8"
 
 	"code.google.com/p/go-uuid/uuid"
 	log "github.com/Sirupsen/logrus"
@@ -54,6 +56,15 @@ func (ctx *Context) DeleteGuest(g *client.Guest) error {
 	return nil
 }
 
+// prefixedActionName creates the appropriate action name for the guest type
+func prefixedActionName(gType, actionName string) string {
+	if gType != "container" || actionName == "" {
+		return actionName
+	}
+	r, n := utf8.DecodeRuneInString(actionName)
+	return "container" + string(unicode.ToUpper(r)) + actionName[n:]
+}
+
 func listGuests(r *HTTPRequest) *HTTPErrorMessage {
 	var guests []*client.Guest
 
@@ -86,14 +97,8 @@ func listGuests(r *HTTPRequest) *HTTPErrorMessage {
 // middlewares
 // NOTE: The config for create should include stages for startup
 func createGuest(r *HTTPRequest) *HTTPErrorMessage {
-	action, err := r.Context.GetAction("create")
-	if err != nil {
-		return r.NewError(err, 404)
-	}
-
 	g := &client.Guest{}
-	err = json.NewDecoder(r.Request.Body).Decode(g)
-	if err != nil {
+	if err := json.NewDecoder(r.Request.Body).Decode(g); err != nil {
 		return r.NewError(err, 400)
 	}
 	if g.Id != "" {
@@ -118,6 +123,10 @@ func createGuest(r *HTTPRequest) *HTTPErrorMessage {
 		return r.NewError(err, 500)
 	}
 
+	action, err := r.Context.GetAction(prefixedActionName(g.Type, "create"))
+	if err != nil {
+		return r.NewError(err, 404)
+	}
 	response := &rpc.GuestResponse{}
 	pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, nil)
 	// Guest requests are special in that they have Args and need
@@ -247,6 +256,7 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 		g := r.Guest
 		runner := r.GuestRunner
 
+		actionName := prefixedActionName(g.Type, actionName)
 		action, err := r.Context.GetAction(actionName)
 		if err != nil {
 			return r.NewError(err, 404)
@@ -275,7 +285,7 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 			if err != nil {
 				return
 			}
-			if actionName == "delete" {
+			if actionName == prefixedActionName(g.Type, "delete") {
 				if err := r.Context.DeleteGuest(g); err != nil {
 					log.WithFields(log.Fields{
 						"guest": g.Id,

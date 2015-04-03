@@ -17,7 +17,7 @@ pushd cmd/mistify-agent
 go get
 go clean
 go build
-./mistify-agent --config-file ../../examples/test-rpc-service/agent.json &
+./mistify-agent --config-file="../../examples/test-rpc-service/agent.json" &
 AGENT_PID=$!
 trap "kill $RPC_PID; kill $AGENT_PID" SIGINT SIGTERM EXIT
 popd
@@ -67,6 +67,14 @@ http POST images --data-binary '{"source":"http://127.0.0.1/foo"}'
 http GET images/foo
 
 http DELETE images/foo
+
+http GET container_images
+
+CIID=$(http POST container_images --data-binary '{"name":"busybox"}' | jq -r .id)
+
+http GET container_images/$CIID
+
+http DELETE container_images/$CIID
 
 kill $AGENT_PID
 sleep 1

@@ -6,6 +6,7 @@ type (
 	Guest struct {
 		Id       string            `json:"id"`
 		Type     string            `json:"type,omitempty"`
+		Image    string            `json:"image,omitempty"`
 		Nics     []Nic             `json:"nics,omitempty"`
 		Disks    []Disk            `json:"disks,omitempty"`
 		State    string            `json:"state,omitempty"`  //current State

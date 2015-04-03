@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/fsouza/go-dockerclient"
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/rpc"
 	logx "github.com/mistifyio/mistify-logrus-ext"
@@ -252,6 +253,106 @@ func (t *Test) DownloadSnapshot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	fmt.Fprint(w, "foobar")
 	return
+}
+
+// ListContainerImages lists container images
+func (t *Test) ListContainerImages(r *http.Request, request *rpc.ContainerImageRequest, response *rpc.ContainerImageResponse) error {
+	response.Images = []*docker.Image{
+		&docker.Image{
+			ID: "foobar",
+		},
+	}
+	return nil
+}
+
+// GetContainerImage gets a container image
+func (t *Test) GetContainerImage(r *http.Request, request *rpc.ContainerImageRequest, response *rpc.ContainerImageResponse) error {
+	response.Images = []*docker.Image{
+		&docker.Image{
+			ID: "foobar",
+		},
+	}
+	return nil
+}
+
+// PullContainerImage pulls a container image
+func (t *Test) PullContainerImage(r *http.Request, request *rpc.ContainerImageRequest, response *rpc.ContainerImageResponse) error {
+	response.Images = []*docker.Image{
+		&docker.Image{
+			ID: "foobar",
+		},
+	}
+	return nil
+}
+
+// DeleteContainerImage deletes a container image
+func (t *Test) DeleteContainerImage(r *http.Request, request *rpc.ContainerImageRequest, response *rpc.ContainerImageResponse) error {
+	response.Images = []*docker.Image{
+		&docker.Image{
+			ID: "foobar",
+		},
+	}
+	return nil
+}
+
+// CreateContainer creates a container
+func (t *Test) CreateContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &client.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
+	}
+	return nil
+}
+
+// StartContainer starts a container
+func (t *Test) StartContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &client.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
+	}
+	return nil
+}
+
+// RebootContainer reboots a container
+func (t *Test) RebootContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &client.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
+	}
+	return nil
+}
+
+// RestartContainer reboots a container
+func (t *Test) RestartContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &client.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
+	}
+	return nil
+}
+
+// StopContainer stops a container
+func (t *Test) StopContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &client.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
+	}
+	return nil
+}
+
+// DeleteContainer deletes a container
+func (t *Test) DeleteContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
+	response.Guest = &client.Guest{
+		Id:    "foobar",
+		Type:  "container",
+		Image: "asdfasdfpoih",
+	}
+	return nil
 }
 
 func main() {
