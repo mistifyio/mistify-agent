@@ -1,4 +1,6 @@
-// Package rpc defines the JSON-RPC over HTTP types the Agent uses to communicate with sub-agents.  It also contains various helpers for writing sub-agents.
+// Package rpc defines the JSON-RPC over HTTP types the Agent uses to
+// communicate with sub-agents.  It also contains various helpers for writing
+// sub-agents.
 package rpc
 
 import (

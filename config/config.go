@@ -1,3 +1,5 @@
+// Package config handles agent configuration from a config file. It also
+// defines the valid actions along with their types.
 package config
 
 import (
