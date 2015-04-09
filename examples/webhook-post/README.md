@@ -44,7 +44,7 @@ We can add this to the create pipeline something like:
   },
   "actions": {
     "create": {
-      "async": [
+      "stages": [
         {
           "service": "someotherservice",
           "method": "Some.Method"
