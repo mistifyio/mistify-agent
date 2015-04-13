@@ -1,41 +1,57 @@
-This is an example sub-agent that posts to a webhook.  You could use
-it to post guest creates/deletes for example.  This has been tested
-with [Slack](https://api.slack.com/) but could be easily modified to
-work with other services.
+# webhook-post
 
-## Adding to Agent ##
+[![webhook-post](https://godoc.org/github.com/mistifyio/mistify-agent/examples/webhook-post?status.png)](https://godoc.org/github.com/mistifyio/mistify-agent/examples/webhook-post)
 
-We can add this to the create pipeline something like:
+webhook-post is an example sub-agent that posts to a webhook. This has been
+tested with Slack but could be easily modified to work with other services.
 
-```json
-{
-  "services": {
-    "someotherservice": {
-      "port": 8000
+
+### Usage
+
+The following arguments are understood:
+
+    $ webhook-post -h
+    Usage of webhook-post:
+    -e, --endpoint="": webhook endpoint
+    -p, --port=31245: listen port
+
+
+### Adding To The Agent
+
+Adding the `webhook` service and, as an example, adding the `Webhook.Post`
+method as a stage of the create action:
+
+    {
+    "services": {
+    	"someotherservice": {
+    	"port": 8000
+    	},
+    	"webhook": {
+    	"port": 31245
+    	}
     },
-    "webhook": {
-      "port": 31245
+    "actions": {
+    	"create": {
+    	"stages": [
+    		{
+    		"service": "someotherservice",
+    		"method": "Some.Method"
+    		},
+    		{
+    		"service": "webhook",
+    		"method": "Webhook.Post",
+    		"args": {
+    			"emoji": "rocket",
+    			"name": "creator"
+    		}
+    		}
+    	]
+    	}
     }
-  },
-  "actions": {
-    "create": {
-      "stages": [
-        {
-          "service": "someotherservice",
-          "method": "Some.Method"
-        },
-        {
-          "service": "webhook",
-          "method": "Webhook.Post",
-          "args": {
-            "emoji": "rocket",
-            "name": "creator"
-          }
-        }
-      ]
     }
-  }
-}
-```
 
-You can override the emoji and username if desired by using the args.
+The emoji and username can be overwritten via the `Webhook.Post` stage args.
+
+
+--
+*Generated with [godocdown](https://github.com/robertkrimen/godocdown)*

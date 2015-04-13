@@ -1,3 +1,12 @@
+simple-subagent is a simple example of a sub-agent for Mistify Agent.
+
+Usage
+
+    $ simple-subagent -h
+    Usage of simple-subagent:
+    -c, --percent=50: Percentage to return an error
+    -p, --port=21356: listen port
+
 # Creating a Subagent
 
 A subagent provides specialized functionality to be performed during certain agent actions. For example, the storage subagent may be used as a stage of the guest `create` action to create the disks. It also may act as a simple hook, triggering side effects during actions.

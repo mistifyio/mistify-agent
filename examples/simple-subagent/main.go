@@ -1,6 +1,3 @@
-/*
-This is a simple example of a sub-agent for Mistify Agent.  It does not do anything useful, but shows the API.
-*/
 package main
 
 import (

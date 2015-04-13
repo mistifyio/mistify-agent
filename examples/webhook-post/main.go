@@ -1,5 +1,3 @@
-// This is a test Mistify sub-agent that implements most of the guest 'actions'.
-// It does not modify the guest is anyway
 package main
 
 import (
