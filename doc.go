@@ -1,13 +1,13 @@
 /*
-Mistify Agent is an agent for managing a hypervisor. It runs local on the
+Mistify Agent is the core agent for managing a hypervisor. It runs local on the
 hypervisor and exposes an HTTP API for managing virtual machines.
 
 General Architecture
 
-Mistify Agent is the "core" agent. It provides a REST-ish API for manipulating
-a hypervisor and defines a general set of actions, but the majority of the work
-is done by sub-agents. Sub-agents are assumed to be running on the same host as
-the agent and communication is done via JSON-RPC over HTTP.
+Mistify Agent  provides a REST-ish API for manipulating a hypervisor and
+defines a general set of actions. It is primarilly an interface to the
+sub-agents, which do most of the work.  Sub-agents are assumed to be running on
+the same host as the agent and communication is done via JSON-RPC over HTTP.
 
 The data structures for the REST API are defined in:
 http://godoc.org/github.com/mistifyio/mistify-agent/client
@@ -29,10 +29,10 @@ Only one storage sub-agent is used, but multiple guest sub-agents may be used.
 
 Actions
 
-While there is a defined set of actions, the work performed configurable. Each
-action has a pipeline, a series of one or more steps that need to be performed
-to complete the action, configurable in the config file. All steps must
-succeed, in order, for an action to be considered successful.
+While there is a defined set of actions, the work performed is configurable.
+Each action has a pipeline, a series of one or more steps that need to be
+performed to complete the action, configurable in the config file. All steps
+must succeed, in order, for an action to be considered successful.
 
 There are three action types:
 

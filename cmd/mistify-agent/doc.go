@@ -1,5 +1,5 @@
 /*
-mistify-agent runs the agent and HTTP API
+mistify-agent runs the agent and HTTP API.
 
 Usage
 
