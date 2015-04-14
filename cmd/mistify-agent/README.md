@@ -2,7 +2,7 @@
 
 [![mistify-agent](https://godoc.org/github.com/mistifyio/mistify-agent/cmd/mistify-agent?status.png)](https://godoc.org/github.com/mistifyio/mistify-agent/cmd/mistify-agent)
 
-mistify-agent runs the agent and HTTP API
+mistify-agent runs the agent and HTTP API.
 
 
 ### Usage
