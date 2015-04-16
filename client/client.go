@@ -1,4 +1,4 @@
-// Package client provides a simple client for the Mistify Agent
+// Package client provides a simple client for the Mistify Agent.
 package client
 
 import (

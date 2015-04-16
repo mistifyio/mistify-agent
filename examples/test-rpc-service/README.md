@@ -1,26 +1,26 @@
-This is a test service/sub-Agent that simply returns the guest from the request in the response and uses "fake" metrics.
+# test-rpc-service
 
-We use this for stubbing out functionality.
+[![test-rpc-service](https://godoc.org/github.com/mistifyio/mistify-agent/examples/test-rpc-service?status.png)](https://godoc.org/github.com/mistifyio/mistify-agent/examples/test-rpc-service)
 
-See `agent.json` for a config for the Agent that uses this sub-agent for all actions.
+test-rpc-service is a test Mistify sub-agent that implements stubs of all the
+actions the agent may call. It returns the guest received for Guest requests and
+fake metrics for metric requests. A sub-agent should generally only have one
+area of concern and do one thing well. This allows sub-agents to be composited
+in various ways.
 
-Example [runit](http://smarden.org/runit/) scripts:
+Run the mistify agent with the test-rpc-service agent.json to use this sub-agent
+for all actions.
 
-Service run script
-```
-#!/bin/sh
-# place in /etc/services/test-rpc-service/run
-exec 2>&1
-ulimit -n 8192
-# this sub-agent does not require any special permissions
-exec chpst -u nobody /usr/local/bin/test-rpc-service -p 9999
-```
+### Usage
 
-Log run script
-```
-#!/bin/sh
-# place in /etc/services/test-rpc-service/log/run
-exec 2>&1
-mkdir -p /var/log/test-rpc-service
-exec svlogd /var/log/test-rpc-service
-```
+    Usage of ./test-rpc-service:
+    -p, --port=9999: listen port
+
+This is a test Mistify sub-agent that implements all the actions the agent may
+call. It returns the guest received for Guest requests and fake metrics for
+metric requests. A sub-agent should generally only have one area of concern and
+do one thing well. This allows sub-agents to be composited in various ways.
+
+
+--
+*Generated with [godocdown](https://github.com/robertkrimen/godocdown)*

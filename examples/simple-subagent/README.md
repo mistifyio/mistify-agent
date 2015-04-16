@@ -1,186 +1,257 @@
-How to write a simple sub-agent
-===============================
+simple-subagent is a simple example of a sub-agent for Mistify Agent.
 
-This is a simple "tutorial" for writing a simple sub-agent.  The completed code can be seen in [main.go](./main.go)
+Usage
 
+    $ simple-subagent -h
+    Usage of simple-subagent:
+    -c, --percent=50: Percentage to return an error
+    -p, --port=21356: listen port
 
-This simple sub-agent will present a single RPC method that returns an error a specified percentage of the time.  The rest of the time, it just returns the guest from the request unmodified in the response.
+# Creating a Subagent
 
-# Imports #
+A subagent provides specialized functionality to be performed during certain agent actions. For example, the storage subagent may be used as a stage of the guest `create` action to create the disks. It also may act as a simple hook, triggering side effects during actions.
 
-First, let's do our package and  imports:
+This simple tutorial shows how to create a subagent with a single RPC method. It will randomly return either an error or the guest from the request. The final result is available in [main.go](./main.go).
+
+## Imports
+
+A few packages will be needed to make the subagent
 
 ```go
-/*
-This is a simple example of a sub-agent for Mistify Agent.  It does not do anything useful, but shows the API.
-*/
 package main
 
 import (
-	"fmt"
-	flag "github.com/docker/docker/pkg/mflag"
-	"github.com/mistifyio/mistify-agent/rpc"
-	"log"
-	"math/rand"
-	"net/http"
-	"os"
-	"time"
+    "fmt"
+    "math/rand"
+    "net/http"
+    "time"
+
+    log "github.com/Sirupsen/logrus"
+    "github.com/mistifyio/mistify-agent/rpc"
+    logx "github.com/mistifyio/mistify-logrus-ext"
+    flag "github.com/spf13/pflag"
 )
 ```
 
-We will be using Go's builtin [math/rand](http://golang.org/pkg/math/rand) package for random number generation.
+* `fmt` will be used for creating formatted `Error` objects
+* `math/rand` provides the random number generation behind whether to return an error or success response
+* `net/http` is needed for the `http.Request` type
+* `Sirupsen/logrus` allows for logs to be consistently formatted and to include a map of additional, easilly parsable fields
+* `mistify-agent/rpc` provides the RPC types and sub-agent helper methods
+* `mistifyio/mistify-logrus-ext` makes `logrus` easier to set up and handle error logging more cleanly
+* `spf13/pflag` is a drop in replacement for the stdlib `flag` package and provides POSIX/GNU-style --flags
 
-I prefer the [docker "hack"](http://godoc.org/github.com/docker/docker/pkg/mflag) version of the stdlib [flag package](http://golang.org/pkg/flag/) as it supports the more familiar "double-dash" (`--`) arguments.
+## Main Struct
 
-The [Mistify RPC package](http://github.com/mistifyio/mistify-agent/rpc) provides the types for RPC communication as well as some helpers for quickly developing an RPC sub-agent.
-
-# Struct #
-
-We have a simple struct for our service.  An instance of this struct is the receiver for all the RPC calls.
+This is a struct for the service and an instance will act as the receiver for all of the RPC calls.
 
 ```go
-type (
-	Simple struct {
-		rand    *rand.Rand // random number generator
-		percent int            // how often to return an error
-	}
-)
+type Simple struct {
+    rand    *rand.Rand // random number generator
+    percent int        // how often to return an error
+}
 ```
 
-# RPC methods #
+An instance holds a random number generator and the percentage of responses that should fail.
 
-We have a single RPC method. The signature is defined by http://www.gorillatoolkit.org/pkg/rpc
+## RPC Method
+
+This subagent will have a single RPC method attached to `Simple`. The method signature is defined by [gorilla/rpc](http://www.gorillatoolkit.org/pkg/rpc). It takes a `http.Request` pointer as well as the data request and response pointers, returning any error.
 
 ```go
-// DoStuff does not actually do anything. It returns an error a certain percentage of the time.
 func (s *Simple) DoStuff(r *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
-	if num := s.rand.Intn(100); num <= s.percent {
-		return fmt.Errorf("returning an error as I do %d%% of the time", s.percent)
-	}
-	// just return the guest from the response
-	*response = rpc.GuestResponse{
-		Guest: request.Guest,
-	}
-	return nil
+    if num := s.rand.Intn(100); num <= s.percent {
+        return fmt.Errorf("returning an error as I do %d%% of the time", s.percent)
+    }
+    // just return the guest from the response
+    *response = rpc.GuestResponse{
+        Guest: request.Guest,
+    }
+    return nil
+}
+```
+
+It first decides whether to fail or not. In the case of a failure, it creates and returns an error. The success case points the response pointer at a new `rpc.GuestResponse` and returns `nil` for the error value. Turning either of these results into the final response to the requesting client is handled automatically.
+
+## Main
+
+The `main()` method handles setup and running of the subagent server. It contains the following parts:
+
+### Configuration Flags
+
+```go
+var port uint
+var percent uint
+
+flag.UintVarP(&port, "port", "p", 21356, "listen port")
+flag.UintVarP(&percent, "percent", "c", 50, "Percentage to return an error")
+flag.Parse()
+
+if percent > 100 {
+    percent = 100
+}
+```
+
+Here, `pflag` parses the arguments for what port the server should run on and how often it should return an error (limiting the maximum to 100%). A nice feature of `pflag` is that the `-h / --help` flag and output are provided automatically.
+
+### Logging
+
+```go
+if err := logx.DefaultSetup("info"); err != nil {
+    log.WithFields(log.Fields{
+        "error": err,
+        "func":  "logx.DefaultSetup",
+    }).Fatal("failed to set up logging")
+}
+```
+
+The `logx.DefaultSetup` method takes care of setting the log level and the formatter to JSON. The `Sirupsen/logrus` package can then be included anywhere and its methods, such as `log.Info("foo")`, will use the configured behavior.
+
+### Receiver
+
+```go
+s := Simple{
+    rand:    rand.New(rand.NewSource(time.Now().Unix())),
+    percent: int(percent),
+}
+```
+
+A new `Simple` is instantiated with the configured error probability and a newly seeded random number generator.
+
+### RPC Server
+
+```go
+server, err := rpc.NewServer(port)
+if err != nil {
+    log.WithFields(log.Fields{
+        "error": err,
+        "func":  "rpc.NewServer",
+    }).Fatal(err)
 }
 
+if err := server.RegisterService(&s); err != nil {
+    log.WithFields(log.Fields{
+        "error": err,
+        "func":  "rpc.Server.RegisterService",
+    }).Fatal(err)
+}
+
+log.WithField("port", port).Info("starting server")
+
+if err = server.ListenAndServe(); err != nil {
+    log.WithFields(log.Fields{
+        "error": err,
+        "func":  "rpc.Server.ListenAndServe",
+    }).Fatal(err)
+}
 ```
 
-# main #
+A new RPC server is created and the receiver (with its methods) is registered so that requests can be routed properly. The server is then ready to start listening and responding to requests.
 
-In `main`, we must parse our arguments and setup our RPC server.
+The path that it will respond to requests on is `/_mistify_RPC_`
 
-## flags ##
-Here we simply use `mflag` to parse the arguments:
+## Testing
+
+By running `go run main.go`, the subagent will be compiled and started on the default port 21356 with the default error rate of 50%. There should be the following output:
 
 ```go
-    var port int
-	var percent uint
-	var h bool
-
-	flag.BoolVar(&h, []string{"h", "#help", "-help"}, false, "display the help")
-	flag.IntVar(&port, []string{"p", "#port", "-port"}, 21356, "listen port")
-	flag.UintVar(&percent, []string{"c", "#percent", "-percent"}, 50, "Percentage to return an error")
-	flag.Parse()
-
-	if h {
-		flag.PrintDefaults()
-		os.Exit(0)
-	}
-
-	if percent > 100 {
-		percent = 100
-	}
+$ go run main.go
+{"level":"info","msg":"starting server","port":21356,"time":"2015-04-09T21:56:11Z"}
 ```
 
-We also make sure that we have a maximum of 100%.
-
-## Receiver##
-
-Now we make a new `Simple` based on the user input.  We are simply seeding rand with the current time - you would probably do something more secure if needed. This will be the receiver for the RPC methods.
-
-```go
-	s := Simple{
-		rand:    rand.New(rand.NewSource(time.Now().Unix())),
-		percent: int(percent),
-	    }
-```
-
-## RPC server ##
-
-Now, we create the RPC server and register.
-
-
-```go
-   server, err := rpc.NewServer(port)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	server.RegisterService(&s)
-	log.Fatal(server.ListenAndServe())
-```
-
-This uses the "helpers" provided by the mistify rpc package to create a server listening an the requested port and to register our receiver.  `ListenAndServe` generally does not return.
-
-## Test ###
-
-Now you should be able to test. For now just run `go run main.go` the process should start and listen on port `21356`.
-
-You should be able to test this by using curl:
-
-```
- curl -s -H "Content-Type: application/json" http://localhost:21356/_mistify_RPC_ --data-binary '{ "method": "Simple.DoStuff", "params": [ { "guest": { "id": "123456789" } } ], "id": 0 }'
- ```
-
-Notice we are calling the `Simple.DoStuff` method which is the name of the struct with the method name.  Also, we are passing a bare minimum representation of a guest.
-
-50% of the time you should get an error:
+### Request Structure
 
 ```json
-{"result":null,"error":"returning an error as I do 50% of the time","id":0}
-```
-
-and 50% of the time get the same guest back:
-
-```json
-{"result":{"guest":{"id":"123456789","action":""}},"error":null,"id":0}
-```
-
-## Using with the Agent ##
-
-To actually use in the agent, we need to add it to the agent config. Assuming we are using the [test/stub config](../test-rpc-service):
-
-Add the service to the config:
-
-```json
- "services": {
-        "test": {
-            "port": 9999
-            },
-         "simple": {
-            "port": 21356
+{
+    "method": "Simple.DoStuff",
+    "params": [
+        {
+            "guest": {
+                "id": "123456789"
+            }
         }
-    }
+    ],
+    "id": 0
+}
 ```
-we could change the create action to:
+
+* `method` is which receiver method to run.
+* `params` is an array containing one `rpc.GuestRequest` (many fields omitted), as that is what the `Simple.DoStuff` method is set up to receive.
+* `id` is the id of the mistify agent making the request, but 0 can be used for testing.
+
+### Making Requests
+
+Using curl, requests can be issued to the subagent as follows:
+
+```bash
+curl -s -H "Content-Type: application/json" \
+    http://localhost:21356/_mistify_RPC_ \
+    --data-binary '{ "method": "Simple.DoStuff", 
+    "params": [ { "guest": { "id": "123456789" } } ], "id": 0 }'
+```
+
+50% of the responses should be an error:
 
 ```json
-    "create": {
-         "sync": [
-             {
-                "method": "Simple.DoStuff",
-                "service": simple"
-              }
-           ],
-            "async": [
-                {
-                    "method": "Test.Create",
-                    "service": "test"
-                }
-            ]
-            },
+{
+    "result": null,
+    "error": "returning an error as I do 50% of the time",
+    "id": 0
+}
 ```
 
-And restart the agent. Now, 50% of the time, creates will fail during request time.
+50% of the responses should be successful, returning the guest back:
 
+```json
+{
+    "result": {
+        "guest": {
+            "id": "123456789",
+            "action": ""
+        }
+    },
+    "error": null,
+    "id": 0
+}
+```
+
+## Agent Integration
+
+To use the subagent with the main agent, the subagent method needs to be added as a stage to one of the agent action pipelines in the agent config file. Using the [test agent](../test-rpc-service) with its `agent.json`:
+
+Add the service like so:
+
+```json
+"services": {
+    "test": {
+        "port": 9999
+    },
+    "testDownload": {
+        "path": "/snapshots/download",
+        "port": 9999
+    },
+    "simple": {
+        "port": 21356
+    }
+}
+```
+
+And then add the subagent method to an action, like `create`
+
+```json
+"create": {
+    "stages": [
+        {
+            "method": "Simple.DoStuff",
+            "service": "simple"
+        },
+        {
+            "method": "Test.Create",
+            "service": "test"
+        }
+    ]
+},
+```
+_Note: All stages in an action share a request, so create subagent method signatures accordingly. See the official subagent methods for each action for more information._
+
+Now restart the agent. With both the agent and the subagent running, whenever a guest create action is requested, it will make a call to the simple subagent (and fail 50% of the time).

@@ -1,6 +1,3 @@
-/*
-This is a simple example of a sub-agent for Mistify Agent.  It does not do anything useful, but shows the API.
-*/
 package main
 
 import (
@@ -15,13 +12,11 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-type (
-	// Simple is the basic struct for the simple service
-	Simple struct {
-		rand    *rand.Rand // random number generator
-		percent int        // how often to return an error
-	}
-)
+// Simple is the basic struct for the simple service
+type Simple struct {
+	rand    *rand.Rand // random number generator
+	percent int        // how often to return an error
+}
 
 // DoStuff does not actually do anything. It returns an error a certain percentage of the time.
 func (s *Simple) DoStuff(r *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
@@ -44,15 +39,15 @@ func main() {
 	flag.UintVarP(&percent, "percent", "c", 50, "Percentage to return an error")
 	flag.Parse()
 
+	if percent > 100 {
+		percent = 100
+	}
+
 	if err := logx.DefaultSetup("info"); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 			"func":  "logx.DefaultSetup",
 		}).Fatal("failed to set up logging")
-	}
-
-	if percent > 100 {
-		percent = 100
 	}
 
 	s := Simple{
@@ -74,6 +69,9 @@ func main() {
 			"func":  "rpc.Server.RegisterService",
 		}).Fatal(err)
 	}
+
+	log.WithField("port", port).Info("starting server")
+
 	if err = server.ListenAndServe(); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
