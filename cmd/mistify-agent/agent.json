@@ -274,11 +274,11 @@
             "port": 30001
         },
         "storage": {
-            "port": 16000
+            "port": 19999
         },
         "storageDownload": {
             "path": "/snapshots/download",
-            "port": 16000
+            "port": 19999
         }
     }
 }
