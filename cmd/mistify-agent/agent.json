@@ -120,7 +120,7 @@
                 }
             ]
         },
-        "run": {
+        "start": {
             "stages": [
                 {
                     "method": "Libvirt.Run",

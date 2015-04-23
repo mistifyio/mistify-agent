@@ -65,7 +65,7 @@ var (
 		"containerPoweroff":    AsyncAction,
 		"shutdown":             AsyncAction,
 		"containerShutdown":    AsyncAction,
-		"run":                  AsyncAction,
+		"start":                AsyncAction,
 		"cpuMetrics":           InfoAction,
 		"nicMetrics":           InfoAction,
 		"diskMetrics":          InfoAction,
