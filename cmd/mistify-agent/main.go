@@ -53,6 +53,13 @@ func main() {
 		}).Fatal("failed to create agent context")
 	}
 
+	if err := ctx.CreateJobLog(); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"func":  "ctx.CreateJobLog",
+		}).Fatal("failed to create job log")
+	}
+
 	if err = ctx.RunGuests(); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,

@@ -70,12 +70,6 @@ func NewContext(cfg *config.Config) (*Context, error) {
 	}
 
 	ctx.GuestRunners = make(map[string]*GuestRunner)
-	// Runner for agent-level jobs, like image fetching
-	_ = ctx.NewGuestRunner("agent", 100, 5)
-
-	if err := ctx.CreateJobLog(); err != nil {
-		return nil, err
-	}
 
 	log.WithFields(log.Fields{
 		"data": ctx,
@@ -120,6 +114,9 @@ func (ctx *Context) GetGuest(id string) (*client.Guest, error) {
 // RunGuests creates and runs helpers for each defined guest. In general, this should only be called early in a process
 // There is no locking provided.
 func (ctx *Context) RunGuests() error {
+	// Runner for agent-level jobs, like image fetching
+	_ = ctx.NewGuestRunner("agent", 100, 5)
+
 	return ctx.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guests")
 		if err != nil {
