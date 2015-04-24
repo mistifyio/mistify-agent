@@ -52,7 +52,6 @@ func (ctx *Context) DeleteGuest(g *client.Guest) error {
 		return err
 	}
 	ctx.DeleteGuestRunner(g.Id)
-	_ = ctx.DeleteGuestJobLog(g.Id)
 	return nil
 }
 
@@ -119,9 +118,6 @@ func createGuest(r *HTTPRequest) *HTTPErrorMessage {
 	}
 
 	runner := r.Context.NewGuestRunner(g.Id, 100, 5)
-	if err := r.Context.CreateGuestJobLog(g.Id); err != nil {
-		return r.NewError(err, 500)
-	}
 
 	action, err := r.Context.GetAction(prefixedActionName(g.Type, "create"))
 	if err != nil {

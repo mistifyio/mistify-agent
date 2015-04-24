@@ -21,7 +21,7 @@ type (
 
 		GuestRunners     map[string]*GuestRunner
 		GuestRunnerMutex sync.Mutex
-		GuestJobLogs     map[string]*GuestJobLog
+		JobLog           *JobLog
 	}
 )
 
@@ -70,7 +70,12 @@ func NewContext(cfg *config.Config) (*Context, error) {
 	}
 
 	ctx.GuestRunners = make(map[string]*GuestRunner)
-	ctx.GuestJobLogs = make(map[string]*GuestJobLog)
+	// Runner for agent-level jobs, like image fetching
+	_ = ctx.NewGuestRunner("agent", 100, 5)
+
+	if err := ctx.CreateJobLog(); err != nil {
+		return nil, err
+	}
 
 	log.WithFields(log.Fields{
 		"data": ctx,
@@ -127,7 +132,6 @@ func (ctx *Context) RunGuests() error {
 				return err
 			}
 			_ = ctx.NewGuestRunner(guest.Id, 100, 5)
-			_ = ctx.CreateGuestJobLog(guest.Id)
 			return nil
 		})
 	})
