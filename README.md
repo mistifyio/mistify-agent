@@ -154,15 +154,15 @@ https://github.com/mistifyio/mistify-agent/blob/master/CONTRIBUTING.md
 ```go
 const (
 	// MaxLoggedJobs configures how many jobs to prune the log to
-	MaxLoggedJobs int = 100
+	MaxLoggedJobs int = 1000
 	// Queued is the queued job status
-	Queued GuestJobStatus = "Queued"
+	Queued JobStatus = "Queued"
 	// Running is the running job status
-	Running GuestJobStatus = "Running"
+	Running JobStatus = "Running"
 	// Complete is the complete job status
-	Complete GuestJobStatus = "Complete"
+	Complete JobStatus = "Complete"
 	// Errored is the errored job status
-	Errored GuestJobStatus = "Error"
+	Errored JobStatus = "Error"
 )
 ```
 
@@ -264,7 +264,7 @@ type Context struct {
 
 	GuestRunners     map[string]*GuestRunner
 	GuestRunnerMutex sync.Mutex
-	GuestJobLogs     map[string]*GuestJobLog
+	JobLog           *JobLog
 }
 ```
 
@@ -277,12 +277,12 @@ func NewContext(cfg *config.Config) (*Context, error)
 ```
 NewContext creates a new context. In general, there should only be one.
 
-#### func (*Context) CreateGuestJobLog
+#### func (*Context) CreateJobLog
 
 ```go
-func (context *Context) CreateGuestJobLog(guestID string) error
+func (context *Context) CreateJobLog() error
 ```
-CreateGuestJobLog creates a new job log for a guest
+CreateJobLog creates a new job log
 
 #### func (*Context) DeleteGuest
 
@@ -290,13 +290,6 @@ CreateGuestJobLog creates a new job log for a guest
 func (ctx *Context) DeleteGuest(g *client.Guest) error
 ```
 DeleteGuest removes a guest from the data store
-
-#### func (*Context) DeleteGuestJobLog
-
-```go
-func (context *Context) DeleteGuestJobLog(guestID string) error
-```
-DeleteGuestJobLog removes a guest's job log
 
 #### func (*Context) DeleteGuestRunner
 
@@ -312,6 +305,13 @@ func (ctx *Context) GetAction(name string) (*Action, error)
 ```
 GetAction looks up an action by name
 
+#### func (*Context) GetAgentRunner
+
+```go
+func (context *Context) GetAgentRunner() (*GuestRunner, error)
+```
+GetAgentRunner retrieves the main agent runner
+
 #### func (*Context) GetGuest
 
 ```go
@@ -319,19 +319,19 @@ func (ctx *Context) GetGuest(id string) (*client.Guest, error)
 ```
 GetGuest fetches a single guest
 
-#### func (*Context) GetGuestJobLog
-
-```go
-func (context *Context) GetGuestJobLog(guestID string) (*GuestJobLog, error)
-```
-GetGuestJobLog retrieves a guest's job log
-
 #### func (*Context) GetGuestRunner
 
 ```go
 func (context *Context) GetGuestRunner(guestID string) (*GuestRunner, error)
 ```
 GetGuestRunner retrieves a GuestRunner
+
+#### func (*Context) GetJobLog
+
+```go
+func (context *Context) GetJobLog() (*JobLog, error)
+```
+GetJobLog retrieves a job log
 
 #### func (*Context) NewGuestRunner
 
@@ -371,86 +371,6 @@ type Guest struct {
 ```
 
 Guest is a "helper struct"
-
-#### type GuestJob
-
-```go
-type GuestJob struct {
-	ID        string
-	Action    string
-	QueuedAt  time.Time
-	StartedAt time.Time
-	UpdatedAt time.Time
-	Status    GuestJobStatus
-	Message   string
-}
-```
-
-GuestJob holds information about a job
-
-#### type GuestJobLog
-
-```go
-type GuestJobLog struct {
-	GuestID     string
-	Context     *Context
-	Index       map[string]int
-	Jobs        []*GuestJob
-	ModifyMutex sync.Mutex
-}
-```
-
-GuestJobLog holds the most recent jobs for a guest
-
-#### func (*GuestJobLog) AddJob
-
-```go
-func (guestJobLog *GuestJobLog) AddJob(jobID string, action string) error
-```
-AddJob adds a job to the log
-
-#### func (*GuestJobLog) GetJob
-
-```go
-func (guestJobLog *GuestJobLog) GetJob(jobID string) (*GuestJob, error)
-```
-GetJob retrieves a job from the log based on job id
-
-#### func (*GuestJobLog) GetLatestJobs
-
-```go
-func (guestJobLog *GuestJobLog) GetLatestJobs(limit int) []*GuestJob
-```
-GetLatestJobs returns the latest X jobs in the log
-
-#### func (*GuestJobLog) Persist
-
-```go
-func (guestJobLog *GuestJobLog) Persist() error
-```
-Persist saves a job log
-
-#### func (*GuestJobLog) ReIndex
-
-```go
-func (guestJobLog *GuestJobLog) ReIndex()
-```
-ReIndex rebuilds the job id index for a job log
-
-#### func (*GuestJobLog) UpdateJob
-
-```go
-func (guestJobLog *GuestJobLog) UpdateJob(jobID string, action string, status GuestJobStatus, message string) error
-```
-UpdateJob updates a job's status and timing information
-
-#### type GuestJobStatus
-
-```go
-type GuestJobStatus string
-```
-
-GuestJobStatus is the string status of a job
 
 #### type GuestRunner
 
@@ -535,6 +455,88 @@ Parameter retrieves request parameter
 func (r *HTTPRequest) SetHeader(key, val string)
 ```
 SetHeader sets an http response header
+
+#### type Job
+
+```go
+type Job struct {
+	ID        string
+	GuestID   string
+	Action    string
+	QueuedAt  time.Time
+	StartedAt time.Time
+	UpdatedAt time.Time
+	Status    JobStatus
+	Message   string
+}
+```
+
+Job holds information about a job
+
+#### type JobLog
+
+```go
+type JobLog struct {
+	GuestID     string
+	Context     *Context
+	Index       map[string]int
+	GuestIndex  map[string][]int
+	Jobs        []*Job
+	ModifyMutex sync.Mutex
+}
+```
+
+JobLog holds the most recent jobs for a guest
+
+#### func (*JobLog) AddJob
+
+```go
+func (jobLog *JobLog) AddJob(jobID, guestID, action string) error
+```
+AddJob adds a job to the log
+
+#### func (*JobLog) GetJob
+
+```go
+func (jobLog *JobLog) GetJob(jobID string) (*Job, error)
+```
+GetJob retrieves a job from the log based on job id
+
+#### func (*JobLog) GetLatestGuestJobs
+
+```go
+func (jobLog *JobLog) GetLatestGuestJobs(guestID string, limit int) []*Job
+```
+GetLatestGuestJobs returns the latest X jobs in the log for a guest
+
+#### func (*JobLog) GetLatestJobs
+
+```go
+func (jobLog *JobLog) GetLatestJobs(limit int) []*Job
+```
+GetLatestJobs returns the latest X jobs in the log
+
+#### func (*JobLog) Persist
+
+```go
+func (jobLog *JobLog) Persist() error
+```
+Persist saves a job log
+
+#### func (*JobLog) UpdateJob
+
+```go
+func (jobLog *JobLog) UpdateJob(jobID string, action string, status JobStatus, message string) error
+```
+UpdateJob updates a job's status and timing information
+
+#### type JobStatus
+
+```go
+type JobStatus string
+```
+
+JobStatus is the string status of a job
 
 #### type Pipeline
 
