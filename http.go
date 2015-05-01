@@ -86,9 +86,12 @@ func Run(ctx *Context, address string) error {
 	r.HandleFunc("/metadata", chain.RequestWrapper(getMetadata)).Methods("GET")
 	r.HandleFunc("/metadata", chain.RequestWrapper(setMetadata)).Methods("PATCH")
 
+	r.HandleFunc("/images", chain.RequestWrapper(listImages)).Queries("type", "{type:[a-zA-Z]+}").Methods("GET")
 	r.HandleFunc("/images", chain.RequestWrapper(listImages)).Methods("GET")
 	r.HandleFunc("/images", chain.RequestWrapper(fetchImage)).Methods("POST")
+	r.HandleFunc("/images/{id}", chain.RequestWrapper(getImage)).Queries("type", "{type:[a-zA-Z]+}").Methods("GET")
 	r.HandleFunc("/images/{id}", chain.RequestWrapper(getImage)).Methods("GET")
+	r.HandleFunc("/images/{id}", chain.RequestWrapper(deleteImage)).Queries("type", "{type:[a-zA-Z]+}").Methods("DELETE")
 	r.HandleFunc("/images/{id}", chain.RequestWrapper(deleteImage)).Methods("DELETE")
 
 	r.HandleFunc("/jobs", chain.RequestWrapper(getLatestJobs)).Methods("GET").Queries("limit", "{limit:[0-9]+}").Methods("GET")
@@ -123,12 +126,6 @@ func Run(ctx *Context, address string) error {
 		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/rollback", prefix), chain.GuestRunnerWrapper(rollbackSnapshot)).Methods("POST")
 		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/download", prefix), chain.GuestRunnerWrapper(downloadSnapshot)).Methods("GET")
 	}
-
-	// Container Images
-	r.HandleFunc("/container_images", chain.RequestWrapper(listContainerImages)).Methods("GET")
-	r.HandleFunc("/container_images", chain.RequestWrapper(pullContainerImage)).Methods("POST")
-	r.HandleFunc("/container_images/{id}", chain.RequestWrapper(getContainerImage)).Methods("GET")
-	r.HandleFunc("/container_images/{id}", chain.RequestWrapper(deleteContainerImage)).Methods("DELETE")
 
 	/*
 		guest := guests.PathPrefix("/{id}").Subrouter()

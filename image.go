@@ -2,57 +2,99 @@ package agent
 
 import (
 	"encoding/json"
+	"errors"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/mistify-agent/rpc"
 )
 
-func listImages(r *HTTPRequest) *HTTPErrorMessage {
-	response := &rpc.ImageResponse{}
-	request := &rpc.ImageRequest{}
-	action, err := r.Context.GetAction("listImages")
-	if err != nil {
-		return r.NewError(err, 404)
+func imageMultiQuery(r *HTTPRequest, actionBaseName string, request *rpc.ImageRequest) ([]*rpc.Image, *HTTPErrorMessage) {
+	// Determine the set of actions to query based on desired image type
+	desiredImageType := r.Parameter("type")
+	imageTypes := []string{"", "container"}
+	if desiredImageType != "" {
+		imageTypes = []string{desiredImageType}
 	}
-	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
-	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
+	n := len(imageTypes)
 
+	// Create channels to aggregate results
+	resps := make(chan *rpc.ImageResponse, n)
+	errors := make(chan error, n)
+
+	// Get the action runner
 	runner, err := r.Context.GetAgentRunner()
 	if err != nil {
-		return r.NewError(err, 500)
+		return nil, r.NewError(err, 500)
 	}
 
-	if err = runner.Process(pipeline); err != nil {
-		return r.NewError(err, 500)
+	// Query in parallel
+	for _, imageType := range imageTypes {
+		actionName := prefixedActionName(imageType, actionBaseName)
+		go imageQuery(runner, actionName, request, resps, errors)
 	}
-	return r.JSON(200, response.Images)
+
+	// Wait for all to finish and aggregate results
+	images := make([]*rpc.Image, 0)
+	for i := 0; i < n; i++ {
+		select {
+		case resp := <-resps:
+			images = append(images, resp.Images...)
+		case err = <-errors:
+			if err.Error() == "no such image" {
+				err = nil
+			}
+			log.WithField("err", err).Info("image query error")
+		}
+	}
+	if err != nil {
+		return nil, r.NewError(err, 500)
+	}
+
+	return images, nil
+}
+
+func imageQuery(runner *GuestRunner, actionName string, request *rpc.ImageRequest, respChan chan *rpc.ImageResponse, errChan chan error) {
+	response := &rpc.ImageResponse{}
+
+	action, err := runner.Context.GetAction(actionName)
+	if err != nil {
+		respChan <- response
+		return
+	}
+	pipeline := action.GeneratePipeline(request, response, nil, nil)
+
+	if err = runner.Process(pipeline); err != nil {
+		errChan <- err
+		return
+	}
+	respChan <- response
+	return
+}
+
+// listImages returns a list of images, optionally filtered by type
+func listImages(r *HTTPRequest) *HTTPErrorMessage {
+	request := &rpc.ImageRequest{}
+	images, err := imageMultiQuery(r, "listImages", request)
+	if err != nil {
+		return err
+	}
+	return r.JSON(200, images)
 }
 
 func getImage(r *HTTPRequest) *HTTPErrorMessage {
-	response := &rpc.ImageResponse{}
 	request := &rpc.ImageRequest{
 		Id: r.Parameter("id"),
 	}
-	action, err := r.Context.GetAction("getImage")
+	images, err := imageMultiQuery(r, "getImage", request)
 	if err != nil {
-		return r.NewError(err, 404)
-	}
-	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
-	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
-
-	runner, err := r.Context.GetAgentRunner()
-	if err != nil {
-		return r.NewError(err, 500)
+		return err
 	}
 
-	if err := runner.Process(pipeline); err != nil {
-		return r.NewError(err, 500)
-	}
-
-	if len(response.Images) < 1 {
+	if len(images) < 1 {
 		return r.NewError(ErrNotFound, 404)
 	}
 
-	return r.JSON(200, response.Images[0])
+	return r.JSON(200, images[0])
 }
 
 func deleteImage(r *HTTPRequest) *HTTPErrorMessage {
@@ -60,16 +102,30 @@ func deleteImage(r *HTTPRequest) *HTTPErrorMessage {
 	request := &rpc.ImageRequest{
 		Id: r.Parameter("id"),
 	}
-	action, err := r.Context.GetAction("deleteImage")
+
+	// First find the image in order to know the type and, therefore, what
+	// specific action to use to delete it
+	images, err := imageMultiQuery(r, "getImage", request)
 	if err != nil {
-		return r.NewError(err, 404)
+		return err
 	}
+
+	if len(images) < 1 {
+		return r.NewError(ErrNotFound, 404)
+	}
+
+	// Go ahead with the delete
+	action, err2 := r.Context.GetAction(prefixedActionName(images[0].Type, "deleteImage"))
+	if err2 != nil {
+		return r.NewError(err2, 404)
+	}
+
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 
-	runner, err := r.Context.GetAgentRunner()
-	if err != nil {
-		return r.NewError(err, 500)
+	runner, err3 := r.Context.GetAgentRunner()
+	if err3 != nil {
+		return r.NewError(err3, 500)
 	}
 
 	if err := runner.Process(pipeline); err != nil {
@@ -85,8 +141,11 @@ func fetchImage(r *HTTPRequest) *HTTPErrorMessage {
 	if err != nil {
 		return r.NewError(err, 400)
 	}
+	if request.Source == "" {
+		return r.NewError(errors.New("missing source"), 400)
+	}
 	response := &rpc.ImageResponse{}
-	action, err := r.Context.GetAction("fetchImage")
+	action, err := r.Context.GetAction(prefixedActionName(request.Type, "fetchImage"))
 	if err != nil {
 		return r.NewError(err, 404)
 	}

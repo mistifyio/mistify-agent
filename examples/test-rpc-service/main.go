@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/fsouza/go-dockerclient"
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/rpc"
 	logx "github.com/mistifyio/mistify-logrus-ext"
@@ -253,46 +252,6 @@ func (t *Test) DownloadSnapshot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	fmt.Fprint(w, "foobar")
 	return
-}
-
-// ListContainerImages lists container images
-func (t *Test) ListContainerImages(r *http.Request, request *rpc.ContainerImageRequest, response *rpc.ContainerImageResponse) error {
-	response.Images = []*docker.Image{
-		&docker.Image{
-			ID: "foobar",
-		},
-	}
-	return nil
-}
-
-// GetContainerImage gets a container image
-func (t *Test) GetContainerImage(r *http.Request, request *rpc.ContainerImageRequest, response *rpc.ContainerImageResponse) error {
-	response.Images = []*docker.Image{
-		&docker.Image{
-			ID: "foobar",
-		},
-	}
-	return nil
-}
-
-// PullContainerImage pulls a container image
-func (t *Test) PullContainerImage(r *http.Request, request *rpc.ContainerImageRequest, response *rpc.ContainerImageResponse) error {
-	response.Images = []*docker.Image{
-		&docker.Image{
-			ID: "foobar",
-		},
-	}
-	return nil
-}
-
-// DeleteContainerImage deletes a container image
-func (t *Test) DeleteContainerImage(r *http.Request, request *rpc.ContainerImageRequest, response *rpc.ContainerImageResponse) error {
-	response.Images = []*docker.Image{
-		&docker.Image{
-			ID: "foobar",
-		},
-	}
-	return nil
 }
 
 // CreateContainer creates a container
