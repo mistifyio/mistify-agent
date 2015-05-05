@@ -90,6 +90,11 @@ func (context *Context) GetGuestRunner(guestID string) (*GuestRunner, error) {
 	return runner, nil
 }
 
+// GetAgentRunner retrieves the main agent runner
+func (context *Context) GetAgentRunner() (*GuestRunner, error) {
+	return context.GetGuestRunner("agent")
+}
+
 // Quit shuts down a GuestRunner
 func (gr *GuestRunner) Quit() {
 	LogRunnerInfo(gr.GuestID, "", "", "Quiting")
@@ -160,7 +165,7 @@ func NewPipelineQueue(name string, guestID string, context *Context) *PipelineQu
 
 // Enqueue queues an async action
 func (pq *PipelineQueue) Enqueue(pipeline *Pipeline) {
-	if err := pq.Context.GuestJobLogs[pq.GuestID].AddJob(pipeline.ID, pipeline.Action); err != nil {
+	if err := pq.Context.JobLog.AddJob(pipeline.ID, pq.GuestID, pipeline.Action); err != nil {
 		LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
 	}
 	pq.PipelineChan <- pipeline
@@ -176,16 +181,16 @@ func (pq *PipelineQueue) Process() {
 				LogRunnerInfo(pq.GuestID, pq.Name, "", "Quitting")
 				return
 			case pipeline := <-pq.PipelineChan:
-				if err := pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Running, ""); err != nil {
+				if err := pq.Context.JobLog.UpdateJob(pipeline.ID, pipeline.Action, Running, ""); err != nil {
 					LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
 				}
 				if err := pipeline.Run(); err != nil {
-					if err := pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Errored, err.Error()); err != nil {
+					if err := pq.Context.JobLog.UpdateJob(pipeline.ID, pipeline.Action, Errored, err.Error()); err != nil {
 						LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
 					}
 					LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
 				} else {
-					if err := pq.Context.GuestJobLogs[pq.GuestID].UpdateJob(pipeline.ID, pipeline.Action, Complete, ""); err != nil {
+					if err := pq.Context.JobLog.UpdateJob(pipeline.ID, pipeline.Action, Complete, ""); err != nil {
 						LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
 					}
 					LogRunnerInfo(pq.GuestID, pq.Name, pipeline.ID, "Success")

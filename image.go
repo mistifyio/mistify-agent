@@ -15,8 +15,13 @@ func listImages(r *HTTPRequest) *HTTPErrorMessage {
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
-	err = pipeline.Run()
+
+	runner, err := r.Context.GetAgentRunner()
 	if err != nil {
+		return r.NewError(err, 500)
+	}
+
+	if err = runner.Process(pipeline); err != nil {
 		return r.NewError(err, 500)
 	}
 	return r.JSON(200, response.Images)
@@ -33,8 +38,13 @@ func getImage(r *HTTPRequest) *HTTPErrorMessage {
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
-	err = pipeline.Run()
+
+	runner, err := r.Context.GetAgentRunner()
 	if err != nil {
+		return r.NewError(err, 500)
+	}
+
+	if err := runner.Process(pipeline); err != nil {
 		return r.NewError(err, 500)
 	}
 
@@ -56,9 +66,14 @@ func deleteImage(r *HTTPRequest) *HTTPErrorMessage {
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
-	err = pipeline.Run()
-	// how to check for not found??
+
+	runner, err := r.Context.GetAgentRunner()
 	if err != nil {
+		return r.NewError(err, 500)
+	}
+
+	if err := runner.Process(pipeline); err != nil {
+		// how to check for not found??
 		return r.NewError(err, 500)
 	}
 	return r.JSON(202, struct{}{})
@@ -77,9 +92,15 @@ func fetchImage(r *HTTPRequest) *HTTPErrorMessage {
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
-	err = pipeline.Run()
+
+	runner, err := r.Context.GetAgentRunner()
 	if err != nil {
 		return r.NewError(err, 500)
 	}
+
+	if err := runner.Process(pipeline); err != nil {
+		return r.NewError(err, 500)
+	}
+
 	return r.JSON(202, response)
 }
