@@ -49,7 +49,8 @@ const (
 	Errored JobStatus = "Error"
 )
 
-// reindex rebuilds the job id index for a job log. Do not call directly.
+// reindex rebuilds the job id index for a job log. Must be called with
+// ModifyMutex held.
 func (jobLog *JobLog) reindex() {
 	jobLog.Index = make(map[string]int)
 	jobLog.GuestIndex = make(map[string][]int)
@@ -59,7 +60,7 @@ func (jobLog *JobLog) reindex() {
 }
 
 // addIndex indexes one new job with a known position. Avoids rebuilding the
-// entire index for every new job. Do not call directly.
+// entire index for every new job. Must be called with ModifyMutex held.
 func (jobLog *JobLog) addIndex(job *Job, position int) {
 	jobLog.Index[job.ID] = position
 	if job.GuestID != "" {
@@ -67,7 +68,8 @@ func (jobLog *JobLog) addIndex(job *Job, position int) {
 	}
 }
 
-// getJob retrieves a job from the log based on job id. Do not call directly.
+// getJob retrieves a job from the log based on job id. Must be called with
+// ModifyMutex held.
 func (jobLog *JobLog) getJob(jobID string) (*Job, error) {
 	index, ok := jobLog.Index[jobID]
 	if !ok {
@@ -170,7 +172,7 @@ func (jobLog *JobLog) UpdateJob(jobID string, action string, status JobStatus, m
 	return jobLog.persist()
 }
 
-// persist saves a job log. Do not call directly.
+// persist saves a job log. Must be called with ModifyMutex held.
 func (jobLog *JobLog) persist() error {
 	return jobLog.Context.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guest_jobs")
@@ -208,62 +210,6 @@ func (jobLog *JobLog) prune() error {
 	return jobLog.persist()
 }
 
-// CreateJobLog creates a new job log
-func (context *Context) CreateJobLog() error {
-	// Attempt to load from database
-	jobLog, err := context.GetJobLog()
-	if err == nil {
-		context.JobLog = jobLog
-		return nil
-	}
-	if err != ErrNotFound {
-		return err
-	}
-	// Create a new one
-	context.JobLog = &JobLog{
-		Context:    context,
-		Index:      make(map[string]int),
-		GuestIndex: make(map[string][]int),
-		Jobs:       make([]*Job, 0, MaxLoggedJobs+1),
-	}
-
-	go func() {
-		for {
-			context.JobLog.prune()
-			time.Sleep(60 * time.Second)
-		}
-	}()
-
-	return nil
-}
-
-// GetJobLog retrieves a job log
-func (context *Context) GetJobLog() (*JobLog, error) {
-	jobLog := &JobLog{
-		Context: context,
-	}
-	err := context.db.Transaction(func(tx *kvite.Tx) error {
-		b, err := tx.Bucket("joblog")
-		if err != nil {
-			return err
-		}
-
-		data, err := b.Get("jobs")
-		if err != nil {
-			return err
-		}
-		if data == nil {
-			return ErrNotFound
-		}
-		return json.Unmarshal(data, &jobLog.Jobs)
-	})
-	if err != nil {
-		return nil, err
-	}
-	jobLog.reindex()
-	return jobLog, nil
-}
-
 func getLatestGuestJobs(r *HTTPRequest) *HTTPErrorMessage {
 	jobLog := r.Context.JobLog
 	limitParam := r.Parameter("limit")
@@ -291,6 +237,7 @@ func getLatestJobs(r *HTTPRequest) *HTTPErrorMessage {
 	}
 	return r.JSON(200, jobLog.GetLatestJobs(limit))
 }
+
 func getJobStatus(r *HTTPRequest) *HTTPErrorMessage {
 	jobLog := r.Context.JobLog
 	job, err := jobLog.GetJob(r.Parameter("jobID"))

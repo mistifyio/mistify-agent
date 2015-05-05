@@ -479,10 +479,10 @@ Job holds information about a job
 type JobLog struct {
 	GuestID     string
 	Context     *Context
+	ModifyMutex sync.RWMutex
 	Index       map[string]int
 	GuestIndex  map[string][]int
 	Jobs        []*Job
-	ModifyMutex sync.Mutex
 }
 ```
 
