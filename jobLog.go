@@ -29,10 +29,10 @@ type (
 	JobLog struct {
 		GuestID     string
 		Context     *Context
+		ModifyMutex sync.RWMutex
 		Index       map[string]int
 		GuestIndex  map[string][]int
 		Jobs        []*Job
-		ModifyMutex sync.Mutex
 	}
 )
 
@@ -49,7 +49,7 @@ const (
 	Errored JobStatus = "Error"
 )
 
-// reindex rebuilds the job id index for a job log
+// reindex rebuilds the job id index for a job log. Do not call directly.
 func (jobLog *JobLog) reindex() {
 	jobLog.Index = make(map[string]int)
 	jobLog.GuestIndex = make(map[string][]int)
@@ -58,6 +58,8 @@ func (jobLog *JobLog) reindex() {
 	}
 }
 
+// addIndex indexes one new job with a known position. Avoids rebuilding the
+// entire index for every new job. Do not call directly.
 func (jobLog *JobLog) addIndex(job *Job, position int) {
 	jobLog.Index[job.ID] = position
 	if job.GuestID != "" {
@@ -65,8 +67,8 @@ func (jobLog *JobLog) addIndex(job *Job, position int) {
 	}
 }
 
-// GetJob retrieves a job from the log based on job id
-func (jobLog *JobLog) GetJob(jobID string) (*Job, error) {
+// getJob retrieves a job from the log based on job id. Do not call directly.
+func (jobLog *JobLog) getJob(jobID string) (*Job, error) {
 	index, ok := jobLog.Index[jobID]
 	if !ok {
 		return nil, ErrNotFound
@@ -74,8 +76,19 @@ func (jobLog *JobLog) GetJob(jobID string) (*Job, error) {
 	return jobLog.Jobs[index], nil
 }
 
+// GetJob retrieves a job from the log based on job id
+func (jobLog *JobLog) GetJob(jobID string) (*Job, error) {
+	jobLog.ModifyMutex.RLock()
+	defer jobLog.ModifyMutex.RUnlock()
+
+	return jobLog.getJob(jobID)
+}
+
 // GetLatestJobs returns the latest X jobs in the log
 func (jobLog *JobLog) GetLatestJobs(limit int) []*Job {
+	jobLog.ModifyMutex.RLock()
+	defer jobLog.ModifyMutex.RUnlock()
+
 	if limit <= 0 {
 		return make([]*Job, 0)
 	}
@@ -95,6 +108,9 @@ func (jobLog *JobLog) GetLatestJobs(limit int) []*Job {
 
 // GetLatestGuestJobs returns the latest X jobs in the log for a guest
 func (jobLog *JobLog) GetLatestGuestJobs(guestID string, limit int) []*Job {
+	jobLog.ModifyMutex.RLock()
+	defer jobLog.ModifyMutex.RUnlock()
+
 	if limit <= 0 {
 		return make([]*Job, 0)
 	}
@@ -133,7 +149,7 @@ func (jobLog *JobLog) AddJob(jobID, guestID, action string) error {
 	jobLog.Jobs = append(jobLog.Jobs, job)
 	jobLog.addIndex(job, len(jobLog.Jobs)-1)
 
-	return jobLog.Persist()
+	return jobLog.persist()
 }
 
 // UpdateJob updates a job's status and timing information
@@ -141,7 +157,7 @@ func (jobLog *JobLog) UpdateJob(jobID string, action string, status JobStatus, m
 	jobLog.ModifyMutex.Lock()
 	defer jobLog.ModifyMutex.Unlock()
 
-	job, err := jobLog.GetJob(jobID)
+	job, err := jobLog.getJob(jobID)
 	if err != nil {
 		return err
 	}
@@ -151,11 +167,11 @@ func (jobLog *JobLog) UpdateJob(jobID string, action string, status JobStatus, m
 		job.StartedAt = time.Now()
 	}
 	job.Message = message
-	return jobLog.Persist()
+	return jobLog.persist()
 }
 
-// Persist saves a job log
-func (jobLog *JobLog) Persist() error {
+// persist saves a job log. Do not call directly.
+func (jobLog *JobLog) persist() error {
 	return jobLog.Context.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guest_jobs")
 		if err != nil {
@@ -169,6 +185,15 @@ func (jobLog *JobLog) Persist() error {
 	})
 }
 
+// Persist saves a job log
+func (jobLog *JobLog) Persist() error {
+	jobLog.ModifyMutex.Lock()
+	defer jobLog.ModifyMutex.Unlock()
+
+	return jobLog.persist()
+}
+
+// prune trims the job log to the max length
 func (jobLog *JobLog) prune() error {
 	jobLog.ModifyMutex.Lock()
 	defer jobLog.ModifyMutex.Unlock()
@@ -180,7 +205,7 @@ func (jobLog *JobLog) prune() error {
 
 	jobLog.Jobs = jobLog.Jobs[n-MaxLoggedJobs:]
 	jobLog.reindex()
-	return jobLog.Persist()
+	return jobLog.persist()
 }
 
 // CreateJobLog creates a new job log

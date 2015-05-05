@@ -92,8 +92,7 @@ func (context *Context) GetGuestRunner(guestID string) (*GuestRunner, error) {
 
 // GetAgentRunner retrieves the main agent runner
 func (context *Context) GetAgentRunner() (*GuestRunner, error) {
-	runner, err := context.GetGuestRunner("agent")
-	return runner, err
+	return context.GetGuestRunner("agent")
 }
 
 // Quit shuts down a GuestRunner
