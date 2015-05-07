@@ -4,13 +4,14 @@ type (
 
 	// Image, volume, and snapshot should probably move to client package
 
-	// Image represents a ZFS ZVOL snapshot used for creating VM disks
+	// Image represents an image used for creating VM disks or containers
 	Image struct {
-		Id       string `json:"id"`       // Unique ID
-		Volume   string `json:"volume"`   // Imported ZVOL
-		Snapshot string `json:"snapshot"` // ZVOL Snapshot
-		Size     uint64 `json:"size"`     // Size in MB
-		Status   string `json:"status"`   // current status of the Image: pending, complete, etc
+		Id       string `json:"id"`                 // Unique ID
+		Type     string `json:"type"`               // Image Type ("container", etc.")
+		Volume   string `json:"volume,omitempty"`   // Imported ZVOL
+		Snapshot string `json:"snapshot,omitempty"` // ZVOL Snapshot
+		Size     uint64 `json:"size"`               // Size in MB
+		Status   string `json:"status,omitempty"`   // current status of the Image: pending, complete, etc
 	}
 
 	// Volume represents a ZFS ZVOL
@@ -26,14 +27,15 @@ type (
 		Size uint64 `json:"size"` // Size in MB
 	}
 
-	// ImageRequest is an image request to the Storage sub-agent
+	// ImageRequest is an image request to the Storage or Container sub-agent
 	ImageRequest struct {
 		Id     string `json:"id"`     // Image ID
+		Type   string `json:"type"`   // Image Type ("container", etc.)
 		Dest   string `json:"dest"`   // Destination for clones, etc
 		Source string `json:"source"` // Source for fetches. Generally a URL
 	}
 
-	// ImageResponse is an image response from the Storage sub-agent
+	// ImageResponse is an image response from the Storage or Container sub-agent
 	ImageResponse struct {
 		Images []*Image `json:"images"` //Image slice for gets and lists. An empty slice is generally used for "not found"
 	}
