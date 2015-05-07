@@ -112,9 +112,9 @@ func deleteImage(r *HTTPRequest) *HTTPErrorMessage {
 
 	// First find the image in order to know the type and, therefore, what
 	// specific action to use to delete it
-	images, err := imageMultiQuery(r, "getImage", request)
-	if err != nil {
-		return err
+	images, mqErr := imageMultiQuery(r, "getImage", request)
+	if mqErr != nil {
+		return mqErr
 	}
 
 	if len(images) < 1 {
@@ -129,17 +129,17 @@ func deleteImage(r *HTTPRequest) *HTTPErrorMessage {
 	}
 
 	// Go ahead with the delete
-	action, err2 := r.Context.GetAction(prefixedActionName(images[0].Type, "deleteImage"))
-	if err2 != nil {
-		return r.NewError(err2, 404)
+	action, err := r.Context.GetAction(prefixedActionName(images[0].Type, "deleteImage"))
+	if err != nil {
+		return r.NewError(err, 404)
 	}
 
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 
-	runner, err3 := r.Context.GetAgentRunner()
-	if err3 != nil {
-		return r.NewError(err3, 500)
+	runner, err := r.Context.GetAgentRunner()
+	if err != nil {
+		return r.NewError(err, 500)
 	}
 
 	if err := runner.Process(pipeline); err != nil {
@@ -158,6 +158,7 @@ func fetchImage(r *HTTPRequest) *HTTPErrorMessage {
 	if request.Source == "" {
 		return r.NewError(errors.New("missing source"), 400)
 	}
+
 	response := &rpc.ImageResponse{}
 	action, err := r.Context.GetAction(prefixedActionName(request.Type, "fetchImage"))
 	if err != nil {
