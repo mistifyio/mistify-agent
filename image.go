@@ -94,6 +94,12 @@ func getImage(r *HTTPRequest) *HTTPErrorMessage {
 	if len(images) < 1 {
 		return r.NewError(ErrNotFound, 404)
 	}
+	if len(images) > 1 {
+		log.WithFields(log.Fields{
+			"imageID": request.Id,
+			"images":  images,
+		}).Error("more than one image share id")
+	}
 
 	return r.JSON(200, images[0])
 }
@@ -113,6 +119,13 @@ func deleteImage(r *HTTPRequest) *HTTPErrorMessage {
 
 	if len(images) < 1 {
 		return r.NewError(ErrNotFound, 404)
+	}
+
+	if len(images) > 1 {
+		log.WithFields(log.Fields{
+			"imageID": request.Id,
+			"images":  images,
+		}).Error("more than one image share id")
 	}
 
 	// Go ahead with the delete
