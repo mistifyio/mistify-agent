@@ -94,6 +94,10 @@ func getImage(r *HTTPRequest) *HTTPErrorMessage {
 	if len(images) < 1 {
 		return r.NewError(ErrNotFound, 404)
 	}
+
+	// This may happen if more than one backend have the image stored under the
+	// same id, which is a problem. It will be much less likely when images are
+	// all pulled from a central image server that assigns ids.
 	if len(images) > 1 {
 		log.WithFields(log.Fields{
 			"imageID": request.Id,
@@ -121,6 +125,9 @@ func deleteImage(r *HTTPRequest) *HTTPErrorMessage {
 		return r.NewError(ErrNotFound, 404)
 	}
 
+	// This may happen if more than one backend have the image stored under the
+	// same id, which is a problem. It will be much less likely when images are
+	// all pulled from a central image server that assigns ids.
 	if len(images) > 1 {
 		log.WithFields(log.Fields{
 			"imageID": request.Id,
