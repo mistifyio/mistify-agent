@@ -42,6 +42,7 @@ func imageMultiQuery(r *HTTPRequest, actionBaseName string, request *rpc.ImageRe
 		case err = <-errors:
 			if err.Error() == "no such image" {
 				err = nil
+				continue
 			}
 			log.WithField("err", err).Info("image query error")
 		}
