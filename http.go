@@ -189,7 +189,7 @@ func (r *HTTPRequest) JSON(code int, obj interface{}) *HTTPErrorMessage {
 	r.ResponseWriter.WriteHeader(code)
 	encoder := json.NewEncoder(r.ResponseWriter)
 	if err := encoder.Encode(obj); err != nil {
-		return r.NewError(err, 500)
+		return r.NewError(err, http.StatusInternalServerError)
 	}
 	return nil
 }
@@ -197,7 +197,7 @@ func (r *HTTPRequest) JSON(code int, obj interface{}) *HTTPErrorMessage {
 // NewError creates an HTTPErrorMessage
 func (r *HTTPRequest) NewError(err error, code int) *HTTPErrorMessage {
 	if code <= 0 {
-		code = 500
+		code = http.StatusInternalServerError
 	}
 	msg := HTTPErrorMessage{
 		Message: err.Error(),
@@ -230,10 +230,10 @@ func getMetadata(r *HTTPRequest) *HTTPErrorMessage {
 	})
 
 	if err != nil {
-		return r.NewError(err, 500)
+		return r.NewError(err, http.StatusInternalServerError)
 	}
 
-	return r.JSON(200, metadata)
+	return r.JSON(http.StatusOK, metadata)
 }
 
 func setMetadata(r *HTTPRequest) *HTTPErrorMessage {
@@ -241,7 +241,7 @@ func setMetadata(r *HTTPRequest) *HTTPErrorMessage {
 
 	err := json.NewDecoder(r.Request.Body).Decode(&metadata)
 	if err != nil {
-		return r.NewError(err, 400)
+		return r.NewError(err, http.StatusBadRequest)
 	}
 
 	err = r.Context.db.Transaction(func(tx *kvite.Tx) error {
@@ -264,7 +264,7 @@ func setMetadata(r *HTTPRequest) *HTTPErrorMessage {
 	})
 
 	if err != nil {
-		return r.NewError(err, 500)
+		return r.NewError(err, http.StatusInternalServerError)
 	}
 
 	return getMetadata(r)

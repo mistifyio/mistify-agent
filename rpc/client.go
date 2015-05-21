@@ -61,20 +61,20 @@ func (c *Client) Do(method string, request interface{}, response interface{}) er
 func (c *Client) DoRaw(request interface{}, rw http.ResponseWriter) {
 	data, err := json.Marshal(request)
 	if err != nil {
-		http.Error(rw, err.Error(), 500)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	resp, err := http.Post(c.URL, "application/json", bytes.NewReader(data))
 	if err != nil {
-		http.Error(rw, err.Error(), 500)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		buf := new(bytes.Buffer)
 		if _, err := buf.ReadFrom(resp.Body); err != nil {
-			http.Error(rw, err.Error(), 500)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		http.Error(rw, buf.String(), resp.StatusCode)
@@ -83,7 +83,7 @@ func (c *Client) DoRaw(request interface{}, rw http.ResponseWriter) {
 	rw.Header().Set("Content-Type", "application/octet-stream")
 	_, err = io.Copy(rw, resp.Body)
 	if err != nil {
-		http.Error(rw, err.Error(), 500)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
 	}
 	return
 }

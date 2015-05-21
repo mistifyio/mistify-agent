@@ -3,6 +3,7 @@ package agent
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/mistifyio/mistify-agent/rpc"
 )
@@ -10,7 +11,7 @@ import (
 func getMetrics(r *HTTPRequest, mtype string) *HTTPErrorMessage {
 	action, err := r.Context.GetAction(fmt.Sprintf("%sMetrics", mtype))
 	if err != nil {
-		return r.NewError(err, 404)
+		return r.NewError(err, http.StatusNotFound)
 	}
 
 	// Metric requests are special in that they have Args that can vary by stage
@@ -27,17 +28,17 @@ func getMetrics(r *HTTPRequest, mtype string) *HTTPErrorMessage {
 	}
 	err = r.GuestRunner.Process(pipeline)
 	if err != nil {
-		return r.NewError(err, 500)
+		return r.NewError(err, http.StatusInternalServerError)
 	}
 	switch mtype {
 	case "cpu":
-		return r.JSON(200, response.CPU)
+		return r.JSON(http.StatusOK, response.CPU)
 	case "nic":
-		return r.JSON(200, response.Nic)
+		return r.JSON(http.StatusOK, response.Nic)
 	case "disk":
-		return r.JSON(200, response.Disk)
+		return r.JSON(http.StatusOK, response.Disk)
 	}
-	return r.NewError(errors.New("Unknown metric"), 500)
+	return r.NewError(errors.New("Unknown metric"), http.StatusInternalServerError)
 }
 
 func getCPUMetrics(r *HTTPRequest) *HTTPErrorMessage {

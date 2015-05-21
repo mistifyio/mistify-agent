@@ -2,6 +2,7 @@ package agent
 
 import (
 	"encoding/json"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -218,10 +219,10 @@ func getLatestGuestJobs(r *HTTPRequest) *HTTPErrorMessage {
 		var err error
 		limit, err = strconv.Atoi(limitParam)
 		if err != nil {
-			return r.NewError(err, 400)
+			return r.NewError(err, http.StatusBadRequest)
 		}
 	}
-	return r.JSON(200, jobLog.GetLatestGuestJobs(r.Guest.Id, limit))
+	return r.JSON(http.StatusOK, jobLog.GetLatestGuestJobs(r.Guest.Id, limit))
 }
 
 func getLatestJobs(r *HTTPRequest) *HTTPErrorMessage {
@@ -232,21 +233,21 @@ func getLatestJobs(r *HTTPRequest) *HTTPErrorMessage {
 		var err error
 		limit, err = strconv.Atoi(limitParam)
 		if err != nil {
-			return r.NewError(err, 400)
+			return r.NewError(err, http.StatusBadRequest)
 		}
 	}
-	return r.JSON(200, jobLog.GetLatestJobs(limit))
+	return r.JSON(http.StatusOK, jobLog.GetLatestJobs(limit))
 }
 
 func getJobStatus(r *HTTPRequest) *HTTPErrorMessage {
 	jobLog := r.Context.JobLog
 	job, err := jobLog.GetJob(r.Parameter("jobID"))
 	if err != nil {
-		code := 500
+		code := http.StatusInternalServerError
 		if err == ErrNotFound {
-			code = 404
+			code = http.StatusNotFound
 		}
 		return r.NewError(err, code)
 	}
-	return r.JSON(200, job)
+	return r.JSON(http.StatusOK, job)
 }
