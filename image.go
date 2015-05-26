@@ -162,8 +162,8 @@ func fetchImage(r *HTTPRequest) *HTTPErrorMessage {
 	if err != nil {
 		return r.NewError(err, 400)
 	}
-	if request.Source == "" {
-		return r.NewError(errors.New("missing source"), 400)
+	if request.Id == "" {
+		return r.NewError(errors.New("missing id"), 400)
 	}
 
 	response := &rpc.ImageResponse{}

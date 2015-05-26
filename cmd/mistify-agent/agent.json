@@ -211,7 +211,7 @@
         "containerFetchImage": {
             "stages": [
                 {
-                    "method": "MDocker.PullImage",
+                    "method": "MDocker.LoadImage",
                     "service": "mdocker"
                 }
             ]
