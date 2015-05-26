@@ -84,10 +84,10 @@ func listGuests(r *HTTPRequest) *HTTPErrorMessage {
 	})
 
 	if err != nil {
-		return r.NewError(err, 500)
+		return r.NewError(err, http.StatusInternalServerError)
 	}
 
-	return r.JSON(200, guests)
+	return r.JSON(http.StatusOK, guests)
 }
 
 // TODO: A lot of the duplicated code between here and the guest action wrapper
@@ -98,11 +98,11 @@ func listGuests(r *HTTPRequest) *HTTPErrorMessage {
 func createGuest(r *HTTPRequest) *HTTPErrorMessage {
 	g := &client.Guest{}
 	if err := json.NewDecoder(r.Request.Body).Decode(g); err != nil {
-		return r.NewError(err, 400)
+		return r.NewError(err, http.StatusBadRequest)
 	}
 	if g.Id != "" {
 		if uuid.Parse(g.Id) == nil {
-			return r.NewError(fmt.Errorf("id must be uuid"), 400)
+			return r.NewError(fmt.Errorf("id must be uuid"), http.StatusBadRequest)
 		}
 	} else {
 		g.Id = uuid.New()
@@ -114,14 +114,14 @@ func createGuest(r *HTTPRequest) *HTTPErrorMessage {
 	// TODO: general validations, like memory, disks look sane, etc
 
 	if err := r.Context.PersistGuest(g); err != nil {
-		return r.NewError(err, 500)
+		return r.NewError(err, http.StatusInternalServerError)
 	}
 
 	runner := r.Context.NewGuestRunner(g.Id, 100, 5)
 
 	action, err := r.Context.GetAction(prefixedActionName(g.Type, "create"))
 	if err != nil {
-		return r.NewError(err, 404)
+		return r.NewError(err, http.StatusNotFound)
 	}
 	response := &rpc.GuestResponse{}
 	pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, nil)
@@ -137,9 +137,9 @@ func createGuest(r *HTTPRequest) *HTTPErrorMessage {
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = runner.Process(pipeline)
 	if err != nil {
-		return r.NewError(err, 500)
+		return r.NewError(err, http.StatusInternalServerError)
 	}
-	return r.JSON(202, g)
+	return r.JSON(http.StatusAccepted, g)
 }
 
 func withGuest(r *HTTPRequest, fn func(r *HTTPRequest) *HTTPErrorMessage) *HTTPErrorMessage {
@@ -162,16 +162,16 @@ func withGuest(r *HTTPRequest, fn func(r *HTTPRequest) *HTTPErrorMessage) *HTTPE
 	})
 
 	if err != nil {
-		code := 500
+		code := http.StatusInternalServerError
 		if err == ErrNotFound {
-			code = 404
+			code = http.StatusNotFound
 		}
 		return r.NewError(err, code)
 	}
 	r.Guest = &g
 	r.GuestRunner, err = r.Context.GetGuestRunner(g.Id)
 	if err != nil {
-		return r.NewError(err, 500)
+		return r.NewError(err, http.StatusInternalServerError)
 	}
 	return fn(r)
 }
@@ -179,7 +179,7 @@ func withGuest(r *HTTPRequest, fn func(r *HTTPRequest) *HTTPErrorMessage) *HTTPE
 func getGuest(r *HTTPRequest) *HTTPErrorMessage {
 	return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
 		g := r.Guest
-		return r.JSON(200, g)
+		return r.JSON(http.StatusOK, g)
 	})
 }
 
@@ -189,16 +189,16 @@ func deleteGuest(r *HTTPRequest) *HTTPErrorMessage {
 		// TODO: Make sure to use the DoneChan here
 		err := r.Context.PersistGuest(g)
 		if err != nil {
-			return r.NewError(err, 500)
+			return r.NewError(err, http.StatusInternalServerError)
 		}
-		return r.JSON(202, g)
+		return r.JSON(http.StatusAccepted, g)
 	})
 }
 
 func getGuestMetadata(r *HTTPRequest) *HTTPErrorMessage {
 	return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
 		g := r.Guest
-		return r.JSON(200, g.Metadata)
+		return r.JSON(http.StatusOK, g.Metadata)
 	})
 }
 
@@ -208,7 +208,7 @@ func setGuestMetadata(r *HTTPRequest) *HTTPErrorMessage {
 		var metadata map[string]string
 		err := json.NewDecoder(r.Request.Body).Decode(&metadata)
 		if err != nil {
-			return r.NewError(err, 400)
+			return r.NewError(err, http.StatusBadRequest)
 		}
 
 		for key, value := range metadata {
@@ -221,9 +221,9 @@ func setGuestMetadata(r *HTTPRequest) *HTTPErrorMessage {
 
 		err = r.Context.PersistGuest(g)
 		if err != nil {
-			return r.NewError(err, 500)
+			return r.NewError(err, http.StatusInternalServerError)
 		}
-		return r.JSON(200, g.Metadata)
+		return r.JSON(http.StatusOK, g.Metadata)
 	})
 }
 
@@ -237,7 +237,7 @@ func (c *Chain) GuestRunnerWrapper(fn func(*HTTPRequest) *HTTPErrorMessage) http
 			g := r.Guest
 			runner, err := r.Context.GetGuestRunner(g.Id)
 			if err != nil {
-				return r.NewError(err, 500)
+				return r.NewError(err, http.StatusInternalServerError)
 			}
 
 			r.GuestRunner = runner
@@ -255,7 +255,7 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 		actionName := prefixedActionName(g.Type, actionName)
 		action, err := r.Context.GetAction(actionName)
 		if err != nil {
-			return r.NewError(err, 404)
+			return r.NewError(err, http.StatusNotFound)
 		}
 
 		response := &rpc.GuestResponse{}
@@ -273,7 +273,7 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 		r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 		err = runner.Process(pipeline)
 		if err != nil {
-			return r.NewError(err, 500)
+			return r.NewError(err, http.StatusInternalServerError)
 		}
 		// Extra processing after the pipeline finishes
 		go func() {
@@ -295,6 +295,6 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 				return
 			}
 		}()
-		return r.JSON(202, g)
+		return r.JSON(http.StatusAccepted, g)
 	})
 }

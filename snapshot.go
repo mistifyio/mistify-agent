@@ -3,6 +3,7 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -11,9 +12,9 @@ import (
 
 func getHTTPError(r *HTTPRequest, err error) *HTTPErrorMessage {
 	if err.Error() == ErrNotFound.Error() {
-		return r.JSON(404, err)
+		return r.JSON(http.StatusNotFound, err)
 	}
-	return r.NewError(err, 500)
+	return r.NewError(err, http.StatusInternalServerError)
 }
 
 func getEntityID(r *HTTPRequest) string {
@@ -34,7 +35,7 @@ func listSnapshots(r *HTTPRequest) *HTTPErrorMessage {
 	request := &rpc.SnapshotRequest{Id: getEntityID(r)}
 	action, err := r.Context.GetAction("listSnapshots")
 	if err != nil {
-		return r.NewError(err, 404)
+		return r.NewError(err, http.StatusNotFound)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
@@ -42,7 +43,7 @@ func listSnapshots(r *HTTPRequest) *HTTPErrorMessage {
 	if err != nil {
 		return getHTTPError(r, err)
 	}
-	return r.JSON(200, response.Snapshots)
+	return r.JSON(http.StatusOK, response.Snapshots)
 }
 
 func getSnapshot(r *HTTPRequest) *HTTPErrorMessage {
@@ -50,7 +51,7 @@ func getSnapshot(r *HTTPRequest) *HTTPErrorMessage {
 	request := &rpc.SnapshotRequest{Id: getEntityID(r)}
 	action, err := r.Context.GetAction("getSnapshot")
 	if err != nil {
-		return r.NewError(err, 404)
+		return r.NewError(err, http.StatusNotFound)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
@@ -58,7 +59,7 @@ func getSnapshot(r *HTTPRequest) *HTTPErrorMessage {
 	if err != nil {
 		return getHTTPError(r, err)
 	}
-	return r.JSON(200, response.Snapshots)
+	return r.JSON(http.StatusOK, response.Snapshots)
 }
 
 func createSnapshot(r *HTTPRequest) *HTTPErrorMessage {
@@ -66,7 +67,7 @@ func createSnapshot(r *HTTPRequest) *HTTPErrorMessage {
 	request := &rpc.SnapshotRequest{}
 	err := json.NewDecoder(r.Request.Body).Decode(request)
 	if err != nil {
-		return r.NewError(err, 400)
+		return r.NewError(err, http.StatusBadRequest)
 	}
 	request.Id = getEntityID(r)
 	request.Recursive = r.Parameter("disk") == ""
@@ -75,7 +76,7 @@ func createSnapshot(r *HTTPRequest) *HTTPErrorMessage {
 	}
 	action, err := r.Context.GetAction("createSnapshot")
 	if err != nil {
-		return r.NewError(err, 404)
+		return r.NewError(err, http.StatusNotFound)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
@@ -83,7 +84,7 @@ func createSnapshot(r *HTTPRequest) *HTTPErrorMessage {
 	if err != nil {
 		return getHTTPError(r, err)
 	}
-	return r.JSON(200, response.Snapshots)
+	return r.JSON(http.StatusOK, response.Snapshots)
 }
 
 func deleteSnapshot(r *HTTPRequest) *HTTPErrorMessage {
@@ -94,7 +95,7 @@ func deleteSnapshot(r *HTTPRequest) *HTTPErrorMessage {
 	}
 	action, err := r.Context.GetAction("deleteSnapshot")
 	if err != nil {
-		return r.NewError(err, 404)
+		return r.NewError(err, http.StatusNotFound)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
@@ -102,7 +103,7 @@ func deleteSnapshot(r *HTTPRequest) *HTTPErrorMessage {
 	if err != nil {
 		return getHTTPError(r, err)
 	}
-	return r.JSON(200, response.Snapshots)
+	return r.JSON(http.StatusOK, response.Snapshots)
 }
 
 func rollbackSnapshot(r *HTTPRequest) *HTTPErrorMessage {
@@ -110,12 +111,12 @@ func rollbackSnapshot(r *HTTPRequest) *HTTPErrorMessage {
 	request := &rpc.SnapshotRequest{}
 	err := json.NewDecoder(r.Request.Body).Decode(request)
 	if err != nil {
-		return r.NewError(err, 400)
+		return r.NewError(err, http.StatusBadRequest)
 	}
 	request.Id = getEntityID(r)
 	action, err := r.Context.GetAction("rollbackSnapshot")
 	if err != nil {
-		return r.NewError(err, 404)
+		return r.NewError(err, http.StatusNotFound)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
@@ -124,7 +125,7 @@ func rollbackSnapshot(r *HTTPRequest) *HTTPErrorMessage {
 		return getHTTPError(r, err)
 	}
 
-	return r.JSON(200, response.Snapshots)
+	return r.JSON(http.StatusOK, response.Snapshots)
 }
 
 func downloadSnapshot(r *HTTPRequest) *HTTPErrorMessage {
@@ -135,7 +136,7 @@ func downloadSnapshot(r *HTTPRequest) *HTTPErrorMessage {
 	}
 	action, err := r.Context.GetAction("downloadSnapshot")
 	if err != nil {
-		return r.NewError(err, 404)
+		return r.NewError(err, http.StatusNotFound)
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)

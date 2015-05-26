@@ -111,7 +111,7 @@ func (c *Client) doRequest(method, path string, input interface{}, expectedStatu
 // ListGuests gets a list of guests
 func (c *Client) ListGuests() (GuestSlice, error) {
 	guests := make(GuestSlice, 0)
-	if err := c.doRequest("GET", "/guests", nil, 200, &guests); err != nil {
+	if err := c.doRequest("GET", "/guests", nil, http.StatusOK, &guests); err != nil {
 		return nil, err
 	}
 
@@ -121,7 +121,7 @@ func (c *Client) ListGuests() (GuestSlice, error) {
 // GetGuest requests creation of a guest
 func (c *Client) GetGuest(id string) (*Guest, error) {
 	var g Guest
-	if err := c.doRequest("GET", filepath.Join("/guests", id), nil, 200, &g); err != nil {
+	if err := c.doRequest("GET", filepath.Join("/guests", id), nil, http.StatusOK, &g); err != nil {
 		return nil, err
 	}
 	return &g, nil
@@ -130,7 +130,7 @@ func (c *Client) GetGuest(id string) (*Guest, error) {
 // CreateGuest requests creation of a new guest
 func (c *Client) CreateGuest(guest *Guest) (*Guest, error) {
 	var g Guest
-	if err := c.doRequest("POST", "/guests", guest, 202, &g); err != nil {
+	if err := c.doRequest("POST", "/guests", guest, http.StatusAccepted, &g); err != nil {
 		return nil, err
 	}
 
