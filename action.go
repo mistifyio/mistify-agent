@@ -21,11 +21,13 @@ type (
 
 	// Pipeline is a full set of stage instances required to complete an action
 	Pipeline struct {
-		ID       string
-		Action   string
-		Type     config.ActionType
-		Stages   []*Stage
-		DoneChan chan error // Signal async is done or errored, for post-hooks
+		ID            string
+		Action        string
+		Type          config.ActionType
+		Stages        []*Stage
+		PreStageFunc  func(*Pipeline, *Stage) error
+		PostStageFunc func(*Pipeline, *Stage) error
+		DoneChan      chan error // Signal async is done or errored, for post-hooks
 	}
 
 	// Action is a full set of stage templates required to complete an action
@@ -48,18 +50,26 @@ func (stage *Stage) Run() error {
 // Run executes each stage in the pipeline. It bails out as soon as an error
 // is encountered
 func (pipeline *Pipeline) Run() error {
+	var err error
 	for _, stage := range pipeline.Stages {
-		if err := stage.Run(); err != nil {
-			if pipeline.DoneChan != nil {
-				pipeline.DoneChan <- err
+		if pipeline.PreStageFunc != nil {
+			if err = pipeline.PreStageFunc(pipeline, stage); err != nil {
+				break
 			}
-			return err
+		}
+		if err = stage.Run(); err != nil {
+			break
+		}
+		if pipeline.PostStageFunc != nil {
+			if err = pipeline.PostStageFunc(pipeline, stage); err != nil {
+				break
+			}
 		}
 	}
 	if pipeline.DoneChan != nil {
-		pipeline.DoneChan <- nil
+		pipeline.DoneChan <- err
 	}
-	return nil
+	return err
 }
 
 // GeneratePipeline creates an instance of Pipeline based on an action's
