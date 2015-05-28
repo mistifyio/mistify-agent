@@ -130,12 +130,12 @@ func createGuest(r *HTTPRequest) *HTTPErrorMessage {
 		Action: action.Name,
 	}
 	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
-	// PreStageFunc to populate copy the stage args into the request
+	// PreStageFunc copies the stage args into the request
 	pipeline.PreStageFunc = func(p *Pipeline, s *Stage) error {
 		request.Args = s.Args
 		return nil
 	}
-	// PostStageFunc to update guest in request and persist guest
+	// PostStageFunc saves the guest and uses it for the next request
 	pipeline.PostStageFunc = func(p *Pipeline, s *Stage) error {
 		request.Guest = response.Guest
 		return r.Context.PersistGuest(response.Guest)
@@ -272,12 +272,12 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 		}
 		doneChan := make(chan error)
 		pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, doneChan)
-		// PreStageFunc to populate copy the stage args into the request
+		// PreStageFunc copies the stage args into the request
 		pipeline.PreStageFunc = func(p *Pipeline, s *Stage) error {
 			request.Args = s.Args
 			return nil
 		}
-		// PostStageFunc to update guest in request and persist guest
+		// PostStageFunc saves the guest and uses it for the next request
 		pipeline.PostStageFunc = func(p *Pipeline, s *Stage) error {
 			request.Guest = response.Guest
 			return r.Context.PersistGuest(response.Guest)
