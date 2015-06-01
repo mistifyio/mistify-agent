@@ -542,11 +542,13 @@ JobStatus is the string status of a job
 
 ```go
 type Pipeline struct {
-	ID       string
-	Action   string
-	Type     config.ActionType
-	Stages   []*Stage
-	DoneChan chan error // Signal async is done or errored, for post-hooks
+	ID            string
+	Action        string
+	Type          config.ActionType
+	Stages        []*Stage
+	PreStageFunc  func(*Pipeline, *Stage) error
+	PostStageFunc func(*Pipeline, *Stage) error
+	DoneChan      chan error // Signal async is done or errored, for post-hooks
 }
 ```
 

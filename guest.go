@@ -123,17 +123,24 @@ func createGuest(r *HTTPRequest) *HTTPErrorMessage {
 	if err != nil {
 		return r.NewError(err, http.StatusNotFound)
 	}
+
 	response := &rpc.GuestResponse{}
-	pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, nil)
-	// Guest requests are special in that they have Args and need
-	// the action name, so fold them in to the request
-	for _, stage := range pipeline.Stages {
-		stage.Request = &rpc.GuestRequest{
-			Guest:  g,
-			Args:   stage.Args,
-			Action: action.Name,
-		}
+	request := &rpc.GuestRequest{
+		Guest:  g,
+		Action: action.Name,
 	}
+	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	// PreStageFunc copies the stage args into the request
+	pipeline.PreStageFunc = func(p *Pipeline, s *Stage) error {
+		request.Args = s.Args
+		return nil
+	}
+	// PostStageFunc saves the guest and uses it for the next request
+	pipeline.PostStageFunc = func(p *Pipeline, s *Stage) error {
+		request.Guest = response.Guest
+		return r.Context.PersistGuest(response.Guest)
+	}
+
 	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = runner.Process(pipeline)
 	if err != nil {
@@ -259,17 +266,23 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 		}
 
 		response := &rpc.GuestResponse{}
-		doneChan := make(chan error)
-		pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, doneChan)
-		// Guest requests are special in that they have Args and need
-		// the action name, so fold them in to the request
-		for _, stage := range pipeline.Stages {
-			stage.Request = &rpc.GuestRequest{
-				Guest:  g,
-				Args:   stage.Args,
-				Action: action.Name,
-			}
+		request := &rpc.GuestRequest{
+			Guest:  g,
+			Action: action.Name,
 		}
+		doneChan := make(chan error)
+		pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, doneChan)
+		// PreStageFunc copies the stage args into the request
+		pipeline.PreStageFunc = func(p *Pipeline, s *Stage) error {
+			request.Args = s.Args
+			return nil
+		}
+		// PostStageFunc saves the guest and uses it for the next request
+		pipeline.PostStageFunc = func(p *Pipeline, s *Stage) error {
+			request.Guest = response.Guest
+			return r.Context.PersistGuest(response.Guest)
+		}
+
 		r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
 		err = runner.Process(pipeline)
 		if err != nil {
@@ -289,9 +302,6 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 						"func":  "agent.Context.DeleteGuest",
 					}).Error("Delete Error:", err)
 				}
-				return
-			}
-			if err := r.Context.PersistGuest(g); err != nil {
 				return
 			}
 		}()
