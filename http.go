@@ -99,6 +99,11 @@ func Run(ctx *Context, address string) error {
 		},
 	)
 
+	guestMiddleware := alice.New(
+		GetGuestMiddleware,
+		GuestRunnerMiddleware,
+	)
+
 	chain := Chain{
 		ctx:   ctx,
 		Chain: alice.New(),
@@ -120,24 +125,23 @@ func Run(ctx *Context, address string) error {
 	r.HandleFunc("/jobs", getLatestJobs).Methods("GET")
 	r.HandleFunc("/jobs/{jobID}", getJobStatus).Methods("GET")
 
-	r.HandleFunc("/guests", chain.RequestWrapper(listGuests)).Methods("GET")
+	r.HandleFunc("/guests", listGuests).Methods("GET")
 
 	// Specific Guest
-	r.HandleFunc("/guests", chain.RequestWrapper(createGuest)).Methods("POST") // Special setup
-	r.HandleFunc("/guests/{id}", chain.GuestRunnerWrapper(getGuest)).Methods("GET")
+	r.HandleFunc("/guests", createGuest).Methods("POST") // Special setup
+	r.Handle("/guests/{id}", guestMiddleware.ThenFunc(getGuest)).Methods("GET")
 	r.HandleFunc("/guests/{id}/jobs", getLatestGuestJobs).Queries("limit", "{limit:[0-9]+}").Methods("GET")
 	r.HandleFunc("/guests/{id}/jobs", getLatestGuestJobs).Methods("GET")
 	r.HandleFunc("/guests/{id}/jobs/{jobID}", getJobStatus).Methods("GET")
-	//r.HandleFunc("/guests/{id}", chain.GuestRunnerWrapper(deleteGuest)).Methods("DELETE")
-	r.HandleFunc("/guests/{id}/metadata", chain.GuestRunnerWrapper(getGuestMetadata)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metadata", chain.GuestRunnerWrapper(setGuestMetadata)).Methods("PATCH")
+	r.Handle("/guests/{id}/metadata", guestMiddleware.ThenFunc(getGuestMetadata)).Methods("GET")
+	r.Handle("/guests/{id}/metadata", guestMiddleware.ThenFunc(setGuestMetadata)).Methods("PATCH")
 
-	r.HandleFunc("/guests/{id}/metrics/cpu", chain.GuestRunnerWrapper(getCPUMetrics)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metrics/disk", chain.GuestRunnerWrapper(getDiskMetrics)).Methods("GET")
-	r.HandleFunc("/guests/{id}/metrics/nic", chain.GuestRunnerWrapper(getNicMetrics)).Methods("GET")
+	r.Handle("/guests/{id}/metrics/cpu", guestMiddleware.ThenFunc(getCPUMetrics)).Methods("GET")
+	r.Handle("/guests/{id}/metrics/disk", guestMiddleware.ThenFunc(getDiskMetrics)).Methods("GET")
+	r.Handle("/guests/{id}/metrics/nic", guestMiddleware.ThenFunc(getNicMetrics)).Methods("GET")
 
 	for _, action := range []string{"shutdown", "reboot", "restart", "poweroff", "start", "suspend", "delete"} {
-		r.HandleFunc(fmt.Sprintf("/guests/{id}/%s", action), chain.GuestActionWrapper(action)).Methods("POST")
+		r.Handle(fmt.Sprintf("/guests/{id}/%s", action), guestMiddleware.ThenFunc(GenerateGuestAction(action))).Methods("POST")
 	}
 
 	for _, prefix := range []string{"/guests/{id}", "/guests/{id}/disks/{disk}"} {

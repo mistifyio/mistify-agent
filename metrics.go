@@ -8,47 +8,58 @@ import (
 	"github.com/mistifyio/mistify-agent/rpc"
 )
 
-func getMetrics(r *HTTPRequest, mtype string) *HTTPErrorMessage {
-	action, err := r.Context.GetAction(fmt.Sprintf("%sMetrics", mtype))
+func getMetrics(w http.ResponseWriter, r *http.Request, mtype string) {
+	hr := &HTTPResponse{w}
+	ctx := GetContext(r)
+	guest := GetRequestGuest(r)
+	runner := GetRequestRunner(r)
+
+	action, err := ctx.GetAction(fmt.Sprintf("%sMetrics", mtype))
 	if err != nil {
-		return r.NewError(err, http.StatusNotFound)
+		hr.JSONError(http.StatusNotFound, err)
+		return
 	}
 
 	// Metric requests are special in that they have Args that can vary by stage
 	// Create a unique request for each stage with the args
+	// TODO: Fix to use Pre/PostStage functions
 	response := &rpc.GuestMetricsResponse{}
-	pipeline := action.GeneratePipeline(nil, response, r.ResponseWriter, nil)
-	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
+	pipeline := action.GeneratePipeline(nil, response, hr, nil)
+	hr.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	for _, stage := range pipeline.Stages {
 		stage.Request = &rpc.GuestMetricsRequest{
-			Guest: r.Guest,
+			Guest: guest,
 			Args:  stage.Args,
 			Type:  mtype,
 		}
 	}
-	err = r.GuestRunner.Process(pipeline)
+	err = runner.Process(pipeline)
 	if err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
 	}
 	switch mtype {
 	case "cpu":
-		return r.JSON(http.StatusOK, response.CPU)
+		hr.JSON(http.StatusOK, response.CPU)
+		return
 	case "nic":
-		return r.JSON(http.StatusOK, response.Nic)
+		hr.JSON(http.StatusOK, response.Nic)
+		return
 	case "disk":
-		return r.JSON(http.StatusOK, response.Disk)
+		hr.JSON(http.StatusOK, response.Disk)
+		return
 	}
-	return r.NewError(errors.New("Unknown metric"), http.StatusInternalServerError)
+	hr.JSONError(http.StatusInternalServerError, errors.New("Unknown metric"))
 }
 
-func getCPUMetrics(r *HTTPRequest) *HTTPErrorMessage {
-	return getMetrics(r, "cpu")
+func getCPUMetrics(w http.ResponseWriter, r *http.Request) {
+	getMetrics(w, r, "cpu")
 }
 
-func getNicMetrics(r *HTTPRequest) *HTTPErrorMessage {
-	return getMetrics(r, "nic")
+func getNicMetrics(w http.ResponseWriter, r *http.Request) {
+	getMetrics(w, r, "nic")
 }
 
-func getDiskMetrics(r *HTTPRequest) *HTTPErrorMessage {
-	return getMetrics(r, "disk")
+func getDiskMetrics(w http.ResponseWriter, r *http.Request) {
+	getMetrics(w, r, "disk")
 }
