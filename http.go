@@ -105,8 +105,8 @@ func Run(ctx *Context, address string) error {
 	}
 
 	// General
-	r.HandleFunc("/metadata", chain.RequestWrapper(getMetadata)).Methods("GET")
-	r.HandleFunc("/metadata", chain.RequestWrapper(setMetadata)).Methods("PATCH")
+	r.HandleFunc("/metadata", getMetadata).Methods("GET")
+	r.HandleFunc("/metadata", setMetadata).Methods("PATCH")
 
 	r.HandleFunc("/images", chain.RequestWrapper(listImages)).Queries("type", "{type:[a-zA-Z]+}").Methods("GET")
 	r.HandleFunc("/images", chain.RequestWrapper(listImages)).Methods("GET")
@@ -237,10 +237,13 @@ func (r *HTTPRequest) NewError(err error, code int) *HTTPErrorMessage {
 	return &msg
 }
 
-func getMetadata(r *HTTPRequest) *HTTPErrorMessage {
+func getMetadata(w http.ResponseWriter, r *http.Request) {
+	hr := HTTPResponse{w}
+	ctx := GetContext(r)
+
 	metadata := make(map[string]string)
 
-	err := r.Context.db.Transaction(func(tx *kvite.Tx) error {
+	err := ctx.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("hypervisor-metadata")
 		if err != nil {
 			return err
@@ -252,21 +255,26 @@ func getMetadata(r *HTTPRequest) *HTTPErrorMessage {
 	})
 
 	if err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
 	}
 
-	return r.JSON(http.StatusOK, metadata)
+	hr.JSON(http.StatusOK, metadata)
 }
 
-func setMetadata(r *HTTPRequest) *HTTPErrorMessage {
+func setMetadata(w http.ResponseWriter, r *http.Request) {
+	hr := HTTPResponse{w}
+	ctx := GetContext(r)
+
 	var metadata map[string]string
 
-	err := json.NewDecoder(r.Request.Body).Decode(&metadata)
+	err := json.NewDecoder(r.Body).Decode(&metadata)
 	if err != nil {
-		return r.NewError(err, http.StatusBadRequest)
+		hr.JSONError(http.StatusBadRequest, err)
+		return
 	}
 
-	err = r.Context.db.Transaction(func(tx *kvite.Tx) error {
+	err = ctx.db.Transaction(func(tx *kvite.Tx) error {
 		for key, value := range metadata {
 			b, err := tx.Bucket("hypervisor-metadata")
 			if err != nil {
@@ -286,10 +294,11 @@ func setMetadata(r *HTTPRequest) *HTTPErrorMessage {
 	})
 
 	if err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
 	}
 
-	return getMetadata(r)
+	getMetadata(w, r)
 }
 
 // JSON writes appropriate headers and JSON body to the http response
