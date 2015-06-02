@@ -100,15 +100,8 @@ func Run(ctx *Context, address string) error {
 	)
 
 	chain := Chain{
-		ctx: ctx,
-		Chain: alice.New(
-			func(h http.Handler) http.Handler {
-				return handlers.CombinedLoggingHandler(os.Stdout, h)
-			},
-			handlers.CompressHandler,
-			func(h http.Handler) http.Handler {
-				return recovery.Handler(os.Stderr, h, true)
-			}),
+		ctx:   ctx,
+		Chain: alice.New(),
 	}
 
 	// General
@@ -165,7 +158,7 @@ func Run(ctx *Context, address string) error {
 
 	s := &http.Server{
 		Addr:           address,
-		Handler:        r,
+		Handler:        commonMiddleware.Then(r),
 		MaxHeaderBytes: 1 << 20,
 	}
 	return s.ListenAndServe()
