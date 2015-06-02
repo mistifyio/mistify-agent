@@ -116,18 +116,18 @@ func Run(ctx *Context, address string) error {
 	r.HandleFunc("/images/{id}", deleteImage).Queries("type", "{type:[a-zA-Z]+}").Methods("DELETE")
 	r.HandleFunc("/images/{id}", deleteImage).Methods("DELETE")
 
-	r.HandleFunc("/jobs", chain.RequestWrapper(getLatestJobs)).Methods("GET").Queries("limit", "{limit:[0-9]+}").Methods("GET")
-	r.HandleFunc("/jobs", chain.RequestWrapper(getLatestJobs)).Methods("GET")
-	r.HandleFunc("/jobs/{jobID}", chain.RequestWrapper(getJobStatus)).Methods("GET")
+	r.HandleFunc("/jobs", getLatestJobs).Methods("GET").Queries("limit", "{limit:[0-9]+}").Methods("GET")
+	r.HandleFunc("/jobs", getLatestJobs).Methods("GET")
+	r.HandleFunc("/jobs/{jobID}", getJobStatus).Methods("GET")
 
 	r.HandleFunc("/guests", chain.RequestWrapper(listGuests)).Methods("GET")
 
 	// Specific Guest
 	r.HandleFunc("/guests", chain.RequestWrapper(createGuest)).Methods("POST") // Special setup
 	r.HandleFunc("/guests/{id}", chain.GuestRunnerWrapper(getGuest)).Methods("GET")
-	r.HandleFunc("/guests/{id}/jobs", chain.GuestRunnerWrapper(getLatestGuestJobs)).Queries("limit", "{limit:[0-9]+}").Methods("GET")
-	r.HandleFunc("/guests/{id}/jobs", chain.GuestRunnerWrapper(getLatestGuestJobs)).Methods("GET")
-	r.HandleFunc("/guests/{id}/jobs/{jobID}", chain.GuestRunnerWrapper(getJobStatus)).Methods("GET")
+	r.HandleFunc("/guests/{id}/jobs", getLatestGuestJobs).Queries("limit", "{limit:[0-9]+}").Methods("GET")
+	r.HandleFunc("/guests/{id}/jobs", getLatestGuestJobs).Methods("GET")
+	r.HandleFunc("/guests/{id}/jobs/{jobID}", getJobStatus).Methods("GET")
 	//r.HandleFunc("/guests/{id}", chain.GuestRunnerWrapper(deleteGuest)).Methods("DELETE")
 	r.HandleFunc("/guests/{id}/metadata", chain.GuestRunnerWrapper(getGuestMetadata)).Methods("GET")
 	r.HandleFunc("/guests/{id}/metadata", chain.GuestRunnerWrapper(setGuestMetadata)).Methods("PATCH")

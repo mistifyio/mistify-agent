@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/mistifyio/kvite"
 )
 
@@ -211,43 +212,58 @@ func (jobLog *JobLog) prune() error {
 	return jobLog.persist()
 }
 
-func getLatestGuestJobs(r *HTTPRequest) *HTTPErrorMessage {
-	jobLog := r.Context.JobLog
-	limitParam := r.Parameter("limit")
+func getLatestGuestJobs(w http.ResponseWriter, r *http.Request) {
+	hr := HTTPResponse{w}
+	ctx := GetContext(r)
+	vars := mux.Vars(r)
+
+	jobLog := ctx.JobLog
+	limitParam := vars["limit"]
 	limit := MaxLoggedJobs
 	if limitParam != "" {
 		var err error
 		limit, err = strconv.Atoi(limitParam)
 		if err != nil {
-			return r.NewError(err, http.StatusBadRequest)
+			hr.JSONError(http.StatusBadRequest, err)
+			return
 		}
 	}
-	return r.JSON(http.StatusOK, jobLog.GetLatestGuestJobs(r.Guest.Id, limit))
+	hr.JSON(http.StatusOK, jobLog.GetLatestJobs(limit))
 }
 
-func getLatestJobs(r *HTTPRequest) *HTTPErrorMessage {
-	jobLog := r.Context.JobLog
-	limitParam := r.Parameter("limit")
+func getLatestJobs(w http.ResponseWriter, r *http.Request) {
+	hr := HTTPResponse{w}
+	ctx := GetContext(r)
+	vars := mux.Vars(r)
+
+	jobLog := ctx.JobLog
+	limitParam := vars["limit"]
 	limit := MaxLoggedJobs
 	if limitParam != "" {
 		var err error
 		limit, err = strconv.Atoi(limitParam)
 		if err != nil {
-			return r.NewError(err, http.StatusBadRequest)
+			hr.JSONError(http.StatusBadRequest, err)
+			return
 		}
 	}
-	return r.JSON(http.StatusOK, jobLog.GetLatestJobs(limit))
+	hr.JSON(http.StatusOK, jobLog.GetLatestJobs(limit))
 }
 
-func getJobStatus(r *HTTPRequest) *HTTPErrorMessage {
-	jobLog := r.Context.JobLog
-	job, err := jobLog.GetJob(r.Parameter("jobID"))
+func getJobStatus(w http.ResponseWriter, r *http.Request) {
+	hr := HTTPResponse{w}
+	ctx := GetContext(r)
+	vars := mux.Vars(r)
+
+	jobLog := ctx.JobLog
+	job, err := jobLog.GetJob(vars["jobID"])
 	if err != nil {
 		code := http.StatusInternalServerError
 		if err == ErrNotFound {
 			code = http.StatusNotFound
 		}
-		return r.NewError(err, code)
+		hr.JSONError(code, err)
+		return
 	}
-	return r.JSON(http.StatusOK, job)
+	hr.JSON(http.StatusOK, job)
 }
