@@ -14,7 +14,9 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/bakins/logrus-middleware"
 	"github.com/bakins/net-http-recover"
+	"github.com/gorilla/context"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
@@ -47,6 +49,8 @@ type (
 	}
 )
 
+const ctxKey string = "agentContext"
+
 var (
 	// ErrNotFound is the error for a resouce not found
 	ErrNotFound = errors.New("not found")
@@ -69,6 +73,25 @@ func Run(ctx *Context, address string) error {
 	r.StrictSlash(true)
 
 	AttachProfiler(r)
+
+	logrusMiddleware := logrusmiddleware.Middleware{
+		Name: "agent",
+	}
+	commonMiddleware := alice.New(
+		func(h http.Handler) http.Handler {
+			return logrusMiddleware.Handler(h, "")
+		},
+		handlers.CompressHandler,
+		func(h http.Handler) http.Handler {
+			return recovery.Handler(os.Stderr, h, true)
+		},
+		func(h http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				context.Set(r, ctxKey, ctx)
+				h.ServeHTTP(w, r)
+			})
+		},
+	)
 
 	chain := Chain{
 		ctx: ctx,
@@ -268,4 +291,12 @@ func setMetadata(r *HTTPRequest) *HTTPErrorMessage {
 	}
 
 	return getMetadata(r)
+}
+
+// GetContext retrieves a Context value for a request
+func GetContext(r *http.Request) *Context {
+	if value := context.Get(r, ctxKey); value != nil {
+		return value.(*Context)
+	}
+	return nil
 }
