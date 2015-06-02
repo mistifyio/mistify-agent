@@ -35,6 +35,12 @@ type (
 		GuestRunner    *GuestRunner
 	}
 
+	// HTTPResponse is a wrapper for http.ResponseWriter which provides access
+	// to several convenience methods
+	HTTPResponse struct {
+		http.ResponseWriter
+	}
+
 	// HTTPErrorMessage is an enhanced error struct for http error responses
 	HTTPErrorMessage struct {
 		Message string   `json:"message"`
@@ -291,6 +297,44 @@ func setMetadata(r *HTTPRequest) *HTTPErrorMessage {
 	}
 
 	return getMetadata(r)
+}
+
+// JSON writes appropriate headers and JSON body to the http response
+func (hr *HTTPResponse) JSON(code int, obj interface{}) {
+	hr.Header().Set("Content-Type", "application/json")
+	hr.WriteHeader(code)
+	encoder := json.NewEncoder(hr)
+	if err := encoder.Encode(obj); err != nil {
+		hr.JSONError(http.StatusInternalServerError, err)
+	}
+}
+
+// JSONError prepares an HTTPError with a stack trace and writes it with
+// HTTPResponse.JSON
+func (hr *HTTPResponse) JSONError(code int, err error) {
+	httpError := &HTTPErrorMessage{
+		Message: err.Error(),
+		Code:    code,
+		Stack:   make([]string, 0, 4),
+	}
+	for i := 1; ; i++ { //
+		pc, file, line, ok := runtime.Caller(i)
+		if !ok {
+			break
+		}
+		// Print this much at least.  If we can't find the source, it won't show.
+		httpError.Stack = append(httpError.Stack, fmt.Sprintf("%s:%d (0x%x)", file, line, pc))
+	}
+	hr.JSON(code, httpError)
+}
+
+// JSONMsg is a convenience method to write a JSON response with just a message
+// string
+func (hr *HTTPResponse) JSONMsg(code int, msg string) {
+	msgObj := map[string]string{
+		"message": msg,
+	}
+	hr.JSON(code, msgObj)
 }
 
 // GetContext retrieves a Context value for a request
