@@ -311,23 +311,36 @@ func (hr *HTTPResponse) JSON(code int, obj interface{}) {
 	}
 }
 
-// JSONError prepares an HTTPError with a stack trace and writes it with
+// JSONError prepares an HTTPErrorMessage with a stack trace and writes it with
 // HTTPResponse.JSON
 func (hr *HTTPResponse) JSONError(code int, err error) {
+	httpError := NewHTTPError(code, err)
+	// Remove this function call from the stack
+	httpError.Stack = httpError.Stack[1:]
+
+	hr.JSON(code, httpError)
+}
+
+// NewHTTPErrorMessage prepares an HTTPErrorMessage with a stack trace
+func NewHTTPError(code int, err error) *HTTPErrorMessage {
 	httpError := &HTTPErrorMessage{
 		Message: err.Error(),
 		Code:    code,
 		Stack:   make([]string, 0, 4),
 	}
-	for i := 1; ; i++ { //
+	// Loop through the callers to build the stack. Skip the first one, which
+	// is this function and continue until there are no more callers
+	for i := 1; ; i++ {
 		pc, file, line, ok := runtime.Caller(i)
 		if !ok {
 			break
 		}
-		// Print this much at least.  If we can't find the source, it won't show.
-		httpError.Stack = append(httpError.Stack, fmt.Sprintf("%s:%d (0x%x)", file, line, pc))
+		// Look up the function name (form of package.Name)
+		fnName := runtime.FuncForPC(pc).Name()
+		// Add the line to the stack array
+		httpError.Stack = append(httpError.Stack, fmt.Sprintf("%s:%d (%s)", file, line, fnName))
 	}
-	hr.JSON(code, httpError)
+	return httpError
 }
 
 // JSONMsg is a convenience method to write a JSON response with just a message
