@@ -105,40 +105,46 @@ func Run(ctx *Context, address string) error {
 	r.HandleFunc("/jobs", getLatestJobs).Methods("GET")
 	r.HandleFunc("/jobs/{jobID}", getJobStatus).Methods("GET")
 
+	// Guest Routes
 	r.HandleFunc("/guests", listGuests).Methods("GET")
-
-	// Specific Guest
 	r.HandleFunc("/guests", createGuest).Methods("POST") // Special setup
+
+	// Since mux requires all routes to start with "/", can't put this bare
+	// one in the guest subrouter cleanly
 	r.Handle("/guests/{id}", guestMiddleware.ThenFunc(getGuest)).Methods("GET")
+
+	// Specific guest, but don't need the guest middlewares, so register
+	// separately from the subrouter
 	r.HandleFunc("/guests/{id}/jobs", getLatestGuestJobs).Queries("limit", "{limit:[0-9]+}").Methods("GET")
 	r.HandleFunc("/guests/{id}/jobs", getLatestGuestJobs).Methods("GET")
 	r.HandleFunc("/guests/{id}/jobs/{jobID}", getJobStatus).Methods("GET")
-	r.Handle("/guests/{id}/metadata", guestMiddleware.ThenFunc(getGuestMetadata)).Methods("GET")
-	r.Handle("/guests/{id}/metadata", guestMiddleware.ThenFunc(setGuestMetadata)).Methods("PATCH")
 
-	r.Handle("/guests/{id}/metrics/cpu", guestMiddleware.ThenFunc(getCPUMetrics)).Methods("GET")
-	r.Handle("/guests/{id}/metrics/disk", guestMiddleware.ThenFunc(getDiskMetrics)).Methods("GET")
-	r.Handle("/guests/{id}/metrics/nic", guestMiddleware.ThenFunc(getNicMetrics)).Methods("GET")
+	// Guest subrouter
+	// Since middleware needs to be applied, a basic subrouter can't be used.
+	// Instead, create a new router with the prefix and then register that with
+	// the main router.
+	gr := mux.NewRouter().PathPrefix("/guests/{id}").Subrouter()
+	r.Handle("/guests/{id}/{path:.*}", guestMiddleware.Then(gr))
+
+	gr.HandleFunc("/metadata", getGuestMetadata).Methods("GET")
+	gr.HandleFunc("/metadata", setGuestMetadata).Methods("PATCH")
+
+	gr.HandleFunc("/metrics/cpu", getCPUMetrics).Methods("GET")
+	gr.HandleFunc("/metrics/disk", getDiskMetrics).Methods("GET")
+	gr.HandleFunc("/metrics/nic", getNicMetrics).Methods("GET")
 
 	for _, action := range []string{"shutdown", "reboot", "restart", "poweroff", "start", "suspend", "delete"} {
-		r.Handle(fmt.Sprintf("/guests/{id}/%s", action), guestMiddleware.ThenFunc(GenerateGuestAction(action))).Methods("POST")
+		gr.HandleFunc(fmt.Sprintf("/%s", action), GenerateGuestAction(action)).Methods("POST")
 	}
 
-	for _, prefix := range []string{"/guests/{id}", "/guests/{id}/disks/{disk}"} {
-		r.Handle(fmt.Sprintf("%s/snapshots", prefix), guestMiddleware.ThenFunc(listSnapshots)).Methods("GET")
-		r.Handle(fmt.Sprintf("%s/snapshots", prefix), guestMiddleware.ThenFunc(createSnapshot)).Methods("POST")
-		r.Handle(fmt.Sprintf("%s/snapshots/{name}", prefix), guestMiddleware.ThenFunc(getSnapshot)).Methods("GET")
-		r.Handle(fmt.Sprintf("%s/snapshots/{name}", prefix), guestMiddleware.ThenFunc(deleteSnapshot)).Methods("DELETE")
-		r.Handle(fmt.Sprintf("%s/snapshots/{name}/rollback", prefix), guestMiddleware.ThenFunc(rollbackSnapshot)).Methods("POST")
-		r.Handle(fmt.Sprintf("%s/snapshots/{name}/download", prefix), guestMiddleware.ThenFunc(downloadSnapshot)).Methods("GET")
+	for _, prefix := range []string{"", "/disks/{disk}"} {
+		gr.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), listSnapshots).Methods("GET")
+		gr.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), createSnapshot).Methods("POST")
+		gr.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), getSnapshot).Methods("GET")
+		gr.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), deleteSnapshot).Methods("DELETE")
+		gr.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/rollback", prefix), rollbackSnapshot).Methods("POST")
+		gr.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/download", prefix), downloadSnapshot).Methods("GET")
 	}
-
-	/*
-		guest := guests.PathPrefix("/{id}").Subrouter()
-		guest.HandleFunc("/vnc", RequestWrapper(ctx, vncGuest))
-		guest.HandleFunc("/history", RequestWrapper(ctx, getGuestHistory)).Methods("GET")
-
-	*/
 
 	s := &http.Server{
 		Addr:           address,
