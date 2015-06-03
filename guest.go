@@ -164,6 +164,7 @@ func createGuest(w http.ResponseWriter, r *http.Request) {
 	hr.JSON(http.StatusAccepted, g)
 }
 
+// GetGuestMiddleware retrieves guest information into the request context
 func GetGuestMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hr := &HTTPResponse{w}
@@ -254,9 +255,7 @@ func setGuestMetadata(w http.ResponseWriter, r *http.Request) {
 	hr.JSON(http.StatusOK, g.Metadata)
 }
 
-// TODO: These wrappers are ugly nesting. Try to find a cleaner, more modular
-// way to do it
-
+// GuestRunnerMiddleware gets and places the runner into the request context
 func GuestRunnerMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hr := &HTTPResponse{w}
@@ -273,7 +272,7 @@ func GuestRunnerMiddleware(h http.Handler) http.Handler {
 	})
 }
 
-// GuestActionwraps an HTTP request with a Guest action to avoid duplicated code
+// GenerateGuestAction creates a handler function for a particular guest action
 func GenerateGuestAction(actionName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		hr := &HTTPResponse{w}
@@ -333,6 +332,7 @@ func GenerateGuestAction(actionName string) http.HandlerFunc {
 	}
 }
 
+// GetRequestGuest retrieves the guest from the request context
 func GetRequestGuest(r *http.Request) *client.Guest {
 	if value := context.Get(r, requestGuestKey); value != nil {
 		return value.(*client.Guest)

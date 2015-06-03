@@ -180,6 +180,34 @@ func AttachProfiler(router *mux.Router)
 ```
 AttachProfiler enables debug profiling exposed on http api endpoints
 
+#### func  GenerateGuestAction
+
+```go
+func GenerateGuestAction(actionName string) http.HandlerFunc
+```
+GenerateGuestAction creates a handler function for a particular guest action
+
+#### func  GetGuestMiddleware
+
+```go
+func GetGuestMiddleware(h http.Handler) http.Handler
+```
+GetGuestMiddleware retrieves guest information into the request context
+
+#### func  GetRequestGuest
+
+```go
+func GetRequestGuest(r *http.Request) *client.Guest
+```
+GetRequestGuest retrieves the guest from the request context
+
+#### func  GuestRunnerMiddleware
+
+```go
+func GuestRunnerMiddleware(h http.Handler) http.Handler
+```
+GuestRunnerMiddleware gets and places the runner into the request context
+
 #### func  LogRunnerError
 
 ```go
@@ -222,38 +250,6 @@ GeneratePipeline creates an instance of Pipeline based on an action's stages and
 supplied request & response. It is returned so that any additional modifications
 (such as adding stage args to requests) can be made before running if needed.
 
-#### type Chain
-
-```go
-type Chain struct {
-	alice.Chain
-}
-```
-
-Chain is a middleware chain
-
-#### func (*Chain) GuestActionWrapper
-
-```go
-func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc
-```
-GuestActionWrapper wraps an HTTP request with a Guest action to avoid duplicated
-code
-
-#### func (*Chain) GuestRunnerWrapper
-
-```go
-func (c *Chain) GuestRunnerWrapper(fn func(*HTTPRequest) *HTTPErrorMessage) http.HandlerFunc
-```
-GuestRunnerWrapper is a middleware that retrieves the runner for a guest
-
-#### func (*Chain) RequestWrapper
-
-```go
-func (c *Chain) RequestWrapper(fn func(*HTTPRequest) *HTTPErrorMessage) http.HandlerFunc
-```
-RequestWrapper turns a basic http request into an HTTPRequest
-
 #### type Context
 
 ```go
@@ -269,6 +265,13 @@ type Context struct {
 ```
 
 Context is the core of the Agent.
+
+#### func  GetContext
+
+```go
+func GetContext(r *http.Request) *Context
+```
+GetContext retrieves a Context value for a request
 
 #### func  NewContext
 
@@ -387,6 +390,13 @@ type GuestRunner struct {
 
 GuestRunner manages actions being performed for a guest
 
+#### func  GetRequestRunner
+
+```go
+func GetRequestRunner(r *http.Request) *GuestRunner
+```
+GetRequestRunner retrieves the guest runner from the request context
+
 #### func (*GuestRunner) Process
 
 ```go
@@ -401,60 +411,64 @@ func (gr *GuestRunner) Quit()
 ```
 Quit shuts down a GuestRunner
 
-#### type HTTPErrorMessage
+#### type HTTPError
 
 ```go
-type HTTPErrorMessage struct {
+type HTTPError struct {
 	Message string   `json:"message"`
 	Code    int      `json:"code"`
 	Stack   []string `json:"stack"`
 }
 ```
 
-HTTPErrorMessage is an enhanced error struct for http error responses
+HTTPError is an enhanced error struct for http error responses
 
-#### type HTTPRequest
+#### func  NewHTTPError
 
 ```go
-type HTTPRequest struct {
-	ResponseWriter http.ResponseWriter
-	Request        *http.Request
-	Context        *Context
+func NewHTTPError(code int, err error) *HTTPError
+```
+NewHTTPError prepares an HTTPError with a stack trace
 
-	Guest       *client.Guest
-	GuestRunner *GuestRunner
+#### func (*HTTPError) Error
+
+```go
+func (e *HTTPError) Error() string
+```
+
+#### type HTTPResponse
+
+```go
+type HTTPResponse struct {
+	http.ResponseWriter
 }
 ```
 
-HTTPRequest is a container for an http request and its context
+HTTPResponse is a wrapper for http.ResponseWriter which provides access to
+several convenience methods
 
-#### func (*HTTPRequest) JSON
-
-```go
-func (r *HTTPRequest) JSON(code int, obj interface{}) *HTTPErrorMessage
-```
-JSON sends an http response with a json body
-
-#### func (*HTTPRequest) NewError
+#### func (*HTTPResponse) JSON
 
 ```go
-func (r *HTTPRequest) NewError(err error, code int) *HTTPErrorMessage
+func (hr *HTTPResponse) JSON(code int, obj interface{})
 ```
-NewError creates an HTTPErrorMessage
+JSON writes appropriate headers and JSON body to the http response
 
-#### func (*HTTPRequest) Parameter
+#### func (*HTTPResponse) JSONError
 
 ```go
-func (r *HTTPRequest) Parameter(key string) string
+func (hr *HTTPResponse) JSONError(code int, err error)
 ```
-Parameter retrieves request parameter
+JSONError prepares an HTTPError with a stack trace and writes it with
+HTTPResponse.JSON
 
-#### func (*HTTPRequest) SetHeader
+#### func (*HTTPResponse) JSONMsg
 
 ```go
-func (r *HTTPRequest) SetHeader(key, val string)
+func (hr *HTTPResponse) JSONMsg(code int, msg string)
 ```
-SetHeader sets an http response header
+JSONMsg is a convenience method to write a JSON response with just a message
+string
 
 #### type Job
 
