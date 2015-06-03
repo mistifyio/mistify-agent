@@ -104,11 +104,6 @@ func Run(ctx *Context, address string) error {
 		GuestRunnerMiddleware,
 	)
 
-	chain := Chain{
-		ctx:   ctx,
-		Chain: alice.New(),
-	}
-
 	// General
 	r.HandleFunc("/metadata", getMetadata).Methods("GET")
 	r.HandleFunc("/metadata", setMetadata).Methods("PATCH")
@@ -145,12 +140,12 @@ func Run(ctx *Context, address string) error {
 	}
 
 	for _, prefix := range []string{"/guests/{id}", "/guests/{id}/disks/{disk}"} {
-		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.GuestRunnerWrapper(listSnapshots)).Methods("GET")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots", prefix), chain.GuestRunnerWrapper(createSnapshot)).Methods("POST")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.GuestRunnerWrapper(getSnapshot)).Methods("GET")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}", prefix), chain.GuestRunnerWrapper(deleteSnapshot)).Methods("DELETE")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/rollback", prefix), chain.GuestRunnerWrapper(rollbackSnapshot)).Methods("POST")
-		r.HandleFunc(fmt.Sprintf("%s/snapshots/{name}/download", prefix), chain.GuestRunnerWrapper(downloadSnapshot)).Methods("GET")
+		r.Handle(fmt.Sprintf("%s/snapshots", prefix), guestMiddleware.ThenFunc(listSnapshots)).Methods("GET")
+		r.Handle(fmt.Sprintf("%s/snapshots", prefix), guestMiddleware.ThenFunc(createSnapshot)).Methods("POST")
+		r.Handle(fmt.Sprintf("%s/snapshots/{name}", prefix), guestMiddleware.ThenFunc(getSnapshot)).Methods("GET")
+		r.Handle(fmt.Sprintf("%s/snapshots/{name}", prefix), guestMiddleware.ThenFunc(deleteSnapshot)).Methods("DELETE")
+		r.Handle(fmt.Sprintf("%s/snapshots/{name}/rollback", prefix), guestMiddleware.ThenFunc(rollbackSnapshot)).Methods("POST")
+		r.Handle(fmt.Sprintf("%s/snapshots/{name}/download", prefix), guestMiddleware.ThenFunc(downloadSnapshot)).Methods("GET")
 	}
 
 	/*
