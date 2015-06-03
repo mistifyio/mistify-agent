@@ -10,7 +10,7 @@ import (
 	"github.com/mistifyio/mistify-agent/rpc"
 )
 
-func imageMultiQuery(ctx *Context, actionBaseName string, desiredImageType string, request *rpc.ImageRequest) ([]*rpc.Image, *HTTPErrorMessage) {
+func imageMultiQuery(ctx *Context, actionBaseName string, desiredImageType string, request *rpc.ImageRequest) ([]*rpc.Image, *HTTPError) {
 	// Determine the set of actions to query based on desired image type
 	imageTypes := []string{"", "container"}
 	if desiredImageType != "" {

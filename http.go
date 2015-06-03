@@ -28,13 +28,17 @@ type (
 		http.ResponseWriter
 	}
 
-	// HTTPErrorMessage is an enhanced error struct for http error responses
-	HTTPErrorMessage struct {
+	// HTTPError is an enhanced error struct for http error responses
+	HTTPError struct {
 		Message string   `json:"message"`
 		Code    int      `json:"code"`
 		Stack   []string `json:"stack"`
 	}
 )
+
+func (e *HTTPError) Error() string {
+	return fmt.Sprintf("http error code: %d, message: %s", e.Code, e.Message)
+}
 
 const ctxKey string = "agentContext"
 
@@ -218,7 +222,7 @@ func (hr *HTTPResponse) JSON(code int, obj interface{}) {
 	}
 }
 
-// JSONError prepares an HTTPErrorMessage with a stack trace and writes it with
+// JSONError prepares an HTTPError with a stack trace and writes it with
 // HTTPResponse.JSON
 func (hr *HTTPResponse) JSONError(code int, err error) {
 	httpError := NewHTTPError(code, err)
@@ -228,9 +232,9 @@ func (hr *HTTPResponse) JSONError(code int, err error) {
 	hr.JSON(code, httpError)
 }
 
-// NewHTTPErrorMessage prepares an HTTPErrorMessage with a stack trace
-func NewHTTPError(code int, err error) *HTTPErrorMessage {
-	httpError := &HTTPErrorMessage{
+// NewHTTPError prepares an HTTPError with a stack trace
+func NewHTTPError(code int, err error) *HTTPError {
+	httpError := &HTTPError{
 		Message: err.Error(),
 		Code:    code,
 		Stack:   make([]string, 0, 4),
