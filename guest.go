@@ -241,16 +241,17 @@ func getGuest(w http.ResponseWriter, r *http.Request) {
 	hr.JSON(http.StatusOK, GetRequestGuest(r))
 }
 
-func deleteGuest(r *HTTPRequest) *HTTPErrorMessage {
-	return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
-		g := r.Guest
-		// TODO: Make sure to use the DoneChan here
-		err := r.Context.PersistGuest(g)
-		if err != nil {
-			return r.NewError(err, http.StatusInternalServerError)
-		}
-		return r.JSON(http.StatusAccepted, g)
-	})
+func deleteGuest(w http.ResponseWriter, r *http.Request) {
+	hr := &HTTPResponse{w}
+	ctx := GetContext(r)
+	g := GetRequestGuest(r)
+
+	err := ctx.PersistGuest(g)
+	if err != nil {
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
+	}
+	hr.JSON(http.StatusAccepted, g)
 }
 
 func getGuestMetadata(w http.ResponseWriter, r *http.Request) {
