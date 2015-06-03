@@ -19,20 +19,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"github.com/mistifyio/kvite"
-	"github.com/mistifyio/mistify-agent/client"
 )
 
 type (
-	// HTTPRequest is a container for an http request and its context
-	HTTPRequest struct {
-		ResponseWriter http.ResponseWriter
-		Request        *http.Request
-		Context        *Context
-		vars           map[string]string
-		Guest          *client.Guest
-		GuestRunner    *GuestRunner
-	}
-
 	// HTTPResponse is a wrapper for http.ResponseWriter which provides access
 	// to several convenience methods
 	HTTPResponse struct {
@@ -153,59 +142,6 @@ func Run(ctx *Context, address string) error {
 		MaxHeaderBytes: 1 << 20,
 	}
 	return s.ListenAndServe()
-}
-
-// Parameter retrieves request parameter
-func (r *HTTPRequest) Parameter(key string) string {
-	vars := r.vars
-
-	if vars == nil {
-		vars = mux.Vars(r.Request)
-		r.vars = vars
-	}
-
-	if vars == nil {
-		return ""
-	}
-
-	return vars[key]
-}
-
-// SetHeader sets an http response header
-func (r *HTTPRequest) SetHeader(key, val string) {
-	r.ResponseWriter.Header().Set(key, val)
-}
-
-// JSON sends an http response with a json body
-func (r *HTTPRequest) JSON(code int, obj interface{}) *HTTPErrorMessage {
-	r.SetHeader("Content-Type", "application/json")
-	r.ResponseWriter.WriteHeader(code)
-	encoder := json.NewEncoder(r.ResponseWriter)
-	if err := encoder.Encode(obj); err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
-	}
-	return nil
-}
-
-// NewError creates an HTTPErrorMessage
-func (r *HTTPRequest) NewError(err error, code int) *HTTPErrorMessage {
-	if code <= 0 {
-		code = http.StatusInternalServerError
-	}
-	msg := HTTPErrorMessage{
-		Message: err.Error(),
-		Code:    code,
-		Stack:   make([]string, 0, 4),
-	}
-	for i := 1; ; i++ { //
-		pc, file, line, ok := runtime.Caller(i)
-		if !ok {
-			break
-		}
-		// Print this much at least.  If we can't find the source, it won't show.
-		msg.Stack = append(msg.Stack, fmt.Sprintf("%s:%d (0x%x)", file, line, pc))
-	}
-	return &msg
 }
 
 func getMetadata(w http.ResponseWriter, r *http.Request) {

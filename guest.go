@@ -164,40 +164,6 @@ func createGuest(w http.ResponseWriter, r *http.Request) {
 	hr.JSON(http.StatusAccepted, g)
 }
 
-func withGuest(r *HTTPRequest, fn func(r *HTTPRequest) *HTTPErrorMessage) *HTTPErrorMessage {
-	id := r.Parameter("id")
-	var g client.Guest
-	err := r.Context.db.Transaction(func(tx *kvite.Tx) error {
-		b, err := tx.Bucket("guests")
-		if err != nil {
-			return err
-		}
-		data, err := b.Get(id)
-		if err != nil {
-			return err
-		}
-		if data == nil {
-			return ErrNotFound
-		}
-
-		return json.Unmarshal(data, &g)
-	})
-
-	if err != nil {
-		code := http.StatusInternalServerError
-		if err == ErrNotFound {
-			code = http.StatusNotFound
-		}
-		return r.NewError(err, code)
-	}
-	r.Guest = &g
-	r.GuestRunner, err = r.Context.GetGuestRunner(g.Id)
-	if err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
-	}
-	return fn(r)
-}
-
 func GetGuestMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hr := &HTTPResponse{w}
