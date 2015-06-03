@@ -11,9 +11,7 @@ import (
 	"os"
 	"runtime"
 	runtime_pprof "runtime/pprof"
-	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/bakins/logrus-middleware"
 	"github.com/bakins/net-http-recover"
 	"github.com/gorilla/context"
@@ -46,12 +44,6 @@ type (
 		Message string   `json:"message"`
 		Code    int      `json:"code"`
 		Stack   []string `json:"stack"`
-	}
-
-	// Chain is a middleware chain
-	Chain struct {
-		alice.Chain
-		ctx *Context
 	}
 )
 
@@ -161,26 +153,6 @@ func Run(ctx *Context, address string) error {
 		MaxHeaderBytes: 1 << 20,
 	}
 	return s.ListenAndServe()
-}
-
-// RequestWrapper turns a basic http request into an HTTPRequest
-func (c *Chain) RequestWrapper(fn func(*HTTPRequest) *HTTPErrorMessage) http.HandlerFunc {
-	return c.Then(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		req := HTTPRequest{
-			Context:        c.ctx,
-			ResponseWriter: w,
-			Request:        r,
-		}
-		if err := fn(&req); err != nil {
-			log.WithFields(log.Fields{
-				"error": err,
-				"func":  "agent.RequestWrapper",
-				"stack": strings.Join(err.Stack, "\t\n\t"),
-				"path":  r.URL.Path,
-			}).Error(err)
-			req.JSON(err.Code, err)
-		}
-	})).ServeHTTP
 }
 
 // Parameter retrieves request parameter

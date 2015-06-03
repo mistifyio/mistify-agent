@@ -290,22 +290,6 @@ func setGuestMetadata(w http.ResponseWriter, r *http.Request) {
 // TODO: These wrappers are ugly nesting. Try to find a cleaner, more modular
 // way to do it
 
-// GuestRunnerWrapper is a middleware that retrieves the runner for a guest
-func (c *Chain) GuestRunnerWrapper(fn func(*HTTPRequest) *HTTPErrorMessage) http.HandlerFunc {
-	return c.RequestWrapper(func(r *HTTPRequest) *HTTPErrorMessage {
-		return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
-			g := r.Guest
-			runner, err := r.Context.GetGuestRunner(g.Id)
-			if err != nil {
-				return r.NewError(err, http.StatusInternalServerError)
-			}
-
-			r.GuestRunner = runner
-			return fn(r)
-		})
-	})
-}
-
 func GuestRunnerMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hr := &HTTPResponse{w}
@@ -319,62 +303,6 @@ func GuestRunnerMiddleware(h http.Handler) http.Handler {
 
 		context.Set(r, requestRunnerKey, runner)
 		h.ServeHTTP(w, r)
-	})
-}
-
-// GuestActionWrapper wraps an HTTP request with a Guest action to avoid duplicated code
-func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
-	return c.GuestRunnerWrapper(func(r *HTTPRequest) *HTTPErrorMessage {
-		g := r.Guest
-		runner := r.GuestRunner
-
-		actionName := prefixedActionName(g.Type, actionName)
-		action, err := r.Context.GetAction(actionName)
-		if err != nil {
-			return r.NewError(err, http.StatusNotFound)
-		}
-
-		response := &rpc.GuestResponse{}
-		request := &rpc.GuestRequest{
-			Guest:  g,
-			Action: action.Name,
-		}
-		doneChan := make(chan error)
-		pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, doneChan)
-		// PreStageFunc copies the stage args into the request
-		pipeline.PreStageFunc = func(p *Pipeline, s *Stage) error {
-			request.Args = s.Args
-			return nil
-		}
-		// PostStageFunc saves the guest and uses it for the next request
-		pipeline.PostStageFunc = func(p *Pipeline, s *Stage) error {
-			request.Guest = response.Guest
-			return r.Context.PersistGuest(response.Guest)
-		}
-
-		r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
-		err = runner.Process(pipeline)
-		if err != nil {
-			return r.NewError(err, http.StatusInternalServerError)
-		}
-		// Extra processing after the pipeline finishes
-		go func() {
-			err := <-doneChan
-			if err != nil {
-				return
-			}
-			if actionName == prefixedActionName(g.Type, "delete") {
-				if err := r.Context.DeleteGuest(g); err != nil {
-					log.WithFields(log.Fields{
-						"guest": g.Id,
-						"error": err,
-						"func":  "agent.Context.DeleteGuest",
-					}).Error("Delete Error:", err)
-				}
-				return
-			}
-		}()
-		return r.JSON(http.StatusAccepted, g)
 	})
 }
 
