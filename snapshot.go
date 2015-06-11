@@ -59,7 +59,6 @@ func getSnapshot(w http.ResponseWriter, r *http.Request) {
 	ctx := GetContext(r)
 	runner := GetRequestRunner(r)
 	vars := mux.Vars(r)
-	fmt.Printf("%+v\n", vars)
 	response := &rpc.SnapshotResponse{}
 	request := &rpc.SnapshotRequest{Id: getEntityID(vars)}
 	action, err := ctx.GetAction("getSnapshot")
@@ -91,6 +90,7 @@ func createSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	request.Id = getEntityID(vars)
+	// If no disk is specified, recursively snapshot all of the guest's disks.
 	request.Recursive = vars["disk"] == ""
 	if request.Dest == "" {
 		request.Dest = fmt.Sprintf("snap-%d", time.Now().Unix())
@@ -117,6 +117,8 @@ func deleteSnapshot(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	response := &rpc.SnapshotResponse{}
+	// If no disk is specified, recursively delete all of the guest's disks'
+	// snapshots.
 	request := &rpc.SnapshotRequest{
 		Id:        getEntityID(vars),
 		Recursive: vars["disk"] == "",
@@ -173,6 +175,8 @@ func downloadSnapshot(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	response := &rpc.SnapshotResponse{}
+	// If no disk is specified, recursively download all of the guest's disks'
+	// snapshots.
 	request := &rpc.SnapshotRequest{
 		Id:        getEntityID(vars),
 		Recursive: vars["disk"] == "",
