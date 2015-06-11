@@ -205,13 +205,13 @@ func GetGuestMiddleware(h http.Handler) http.Handler {
 
 func getGuest(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	hr.JSON(http.StatusOK, GetRequestGuest(r))
+	hr.JSON(http.StatusOK, getRequestGuest(r))
 }
 
 func deleteGuest(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
 	ctx := GetContext(r)
-	g := GetRequestGuest(r)
+	g := getRequestGuest(r)
 
 	err := ctx.PersistGuest(g)
 	if err != nil {
@@ -223,14 +223,14 @@ func deleteGuest(w http.ResponseWriter, r *http.Request) {
 
 func getGuestMetadata(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	g := GetRequestGuest(r)
+	g := getRequestGuest(r)
 	hr.JSON(http.StatusOK, g.Metadata)
 }
 
 func setGuestMetadata(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
 	ctx := GetContext(r)
-	g := GetRequestGuest(r)
+	g := getRequestGuest(r)
 
 	var metadata map[string]string
 	err := json.NewDecoder(r.Body).Decode(&metadata)
@@ -259,7 +259,7 @@ func setGuestMetadata(w http.ResponseWriter, r *http.Request) {
 func guestRunnerMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetContext(r)
-		guest := GetRequestGuest(r)
+		guest := getRequestGuest(r)
 		runner, err := ctx.GetGuestRunner(guest.Id)
 		if err != nil {
 			hr := &HTTPResponse{w}
@@ -277,7 +277,7 @@ func generateGuestAction(actionName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		hr := &HTTPResponse{w}
 		ctx := GetContext(r)
-		g := GetRequestGuest(r)
+		g := getRequestGuest(r)
 		runner := GetRequestRunner(r)
 
 		actionName := prefixedActionName(g.Type, actionName)
@@ -331,8 +331,8 @@ func generateGuestAction(actionName string) http.HandlerFunc {
 	}
 }
 
-// GetRequestGuest retrieves the guest from the request context
-func GetRequestGuest(r *http.Request) *client.Guest {
+// getRequestGuest retrieves the guest from the request context
+func getRequestGuest(r *http.Request) *client.Guest {
 	if value := context.Get(r, requestGuestKey); value != nil {
 		return value.(*client.Guest)
 	}

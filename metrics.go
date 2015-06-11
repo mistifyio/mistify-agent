@@ -11,7 +11,7 @@ import (
 func getMetrics(w http.ResponseWriter, r *http.Request, mtype string) {
 	hr := &HTTPResponse{w}
 	ctx := GetContext(r)
-	guest := GetRequestGuest(r)
+	guest := getRequestGuest(r)
 	runner := GetRequestRunner(r)
 
 	action, err := ctx.GetAction(fmt.Sprintf("%sMetrics", mtype))

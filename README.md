@@ -187,13 +187,6 @@ func GetGuestMiddleware(h http.Handler) http.Handler
 ```
 GetGuestMiddleware retrieves guest information into the request context
 
-#### func  GetRequestGuest
-
-```go
-func GetRequestGuest(r *http.Request) *client.Guest
-```
-GetRequestGuest retrieves the guest from the request context
-
 #### func  LogRunnerError
 
 ```go
