@@ -258,11 +258,11 @@ func setGuestMetadata(w http.ResponseWriter, r *http.Request) {
 // GuestRunnerMiddleware gets and places the runner into the request context
 func GuestRunnerMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		hr := &HTTPResponse{w}
 		ctx := GetContext(r)
 		guest := GetRequestGuest(r)
 		runner, err := ctx.GetGuestRunner(guest.Id)
 		if err != nil {
+			hr := &HTTPResponse{w}
 			hr.JSONError(http.StatusInternalServerError, err)
 			return
 		}
