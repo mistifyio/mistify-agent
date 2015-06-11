@@ -313,8 +313,7 @@ func GenerateGuestAction(actionName string) http.HandlerFunc {
 		}
 		// Extra processing after the pipeline finishes
 		go func() {
-			err := <-doneChan
-			if err != nil {
+			if <-doneChan != nil {
 				return
 			}
 			if actionName == prefixedActionName(g.Type, "delete") {
