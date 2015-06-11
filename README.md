@@ -201,13 +201,6 @@ func GetRequestGuest(r *http.Request) *client.Guest
 ```
 GetRequestGuest retrieves the guest from the request context
 
-#### func  GuestRunnerMiddleware
-
-```go
-func GuestRunnerMiddleware(h http.Handler) http.Handler
-```
-GuestRunnerMiddleware gets and places the runner into the request context
-
 #### func  LogRunnerError
 
 ```go

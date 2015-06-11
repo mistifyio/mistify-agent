@@ -86,7 +86,7 @@ func Run(ctx *Context, address string) error {
 
 	guestMiddleware := alice.New(
 		GetGuestMiddleware,
-		GuestRunnerMiddleware,
+		guestRunnerMiddleware,
 	)
 
 	// General

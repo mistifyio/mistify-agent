@@ -255,8 +255,8 @@ func setGuestMetadata(w http.ResponseWriter, r *http.Request) {
 	hr.JSON(http.StatusOK, g.Metadata)
 }
 
-// GuestRunnerMiddleware gets and places the runner into the request context
-func GuestRunnerMiddleware(h http.Handler) http.Handler {
+// guestRunnerMiddleware gets and places the runner into the request context
+func guestRunnerMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetContext(r)
 		guest := GetRequestGuest(r)
