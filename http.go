@@ -134,7 +134,7 @@ func Run(ctx *Context, address string) error {
 	gr.HandleFunc("/metrics/nic", getNicMetrics).Methods("GET")
 
 	for _, action := range []string{"shutdown", "reboot", "restart", "poweroff", "start", "suspend", "delete"} {
-		gr.HandleFunc(fmt.Sprintf("/%s", action), GenerateGuestAction(action)).Methods("POST")
+		gr.HandleFunc(fmt.Sprintf("/%s", action), generateGuestAction(action)).Methods("POST")
 	}
 
 	for _, prefix := range []string{"", "/disks/{disk}"} {

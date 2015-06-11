@@ -272,8 +272,8 @@ func guestRunnerMiddleware(h http.Handler) http.Handler {
 	})
 }
 
-// GenerateGuestAction creates a handler function for a particular guest action
-func GenerateGuestAction(actionName string) http.HandlerFunc {
+// generateGuestAction creates a handler function for a particular guest action
+func generateGuestAction(actionName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		hr := &HTTPResponse{w}
 		ctx := GetContext(r)
