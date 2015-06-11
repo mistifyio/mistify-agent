@@ -164,8 +164,8 @@ func createGuest(w http.ResponseWriter, r *http.Request) {
 	hr.JSON(http.StatusAccepted, g)
 }
 
-// GetGuestMiddleware retrieves guest information into the request context
-func GetGuestMiddleware(h http.Handler) http.Handler {
+// getGuestMiddleware retrieves guest information into the request context
+func getGuestMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hr := &HTTPResponse{w}
 		ctx := getContext(r)

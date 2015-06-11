@@ -180,13 +180,6 @@ func AttachProfiler(router *mux.Router)
 ```
 AttachProfiler enables debug profiling exposed on http api endpoints
 
-#### func  GetGuestMiddleware
-
-```go
-func GetGuestMiddleware(h http.Handler) http.Handler
-```
-GetGuestMiddleware retrieves guest information into the request context
-
 #### func  LogRunnerError
 
 ```go
