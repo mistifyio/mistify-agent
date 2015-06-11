@@ -369,13 +369,6 @@ type GuestRunner struct {
 
 GuestRunner manages actions being performed for a guest
 
-#### func  GetRequestRunner
-
-```go
-func GetRequestRunner(r *http.Request) *GuestRunner
-```
-GetRequestRunner retrieves the guest runner from the request context
-
 #### func (*GuestRunner) Process
 
 ```go

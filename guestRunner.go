@@ -229,8 +229,8 @@ func LogRunnerError(guestID string, runnerName string, pipelineID string, logLin
 	}).Error(logLine)
 }
 
-// GetRequestRunner retrieves the guest runner from the request context
-func GetRequestRunner(r *http.Request) *GuestRunner {
+// getRequestRunner retrieves the guest runner from the request context
+func getRequestRunner(r *http.Request) *GuestRunner {
 	if value := context.Get(r, requestRunnerKey); value != nil {
 		return value.(*GuestRunner)
 	}

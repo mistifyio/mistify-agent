@@ -278,7 +278,7 @@ func generateGuestAction(actionName string) http.HandlerFunc {
 		hr := &HTTPResponse{w}
 		ctx := GetContext(r)
 		g := getRequestGuest(r)
-		runner := GetRequestRunner(r)
+		runner := getRequestRunner(r)
 
 		actionName := prefixedActionName(g.Type, actionName)
 		action, err := ctx.GetAction(actionName)

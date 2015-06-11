@@ -12,7 +12,7 @@ func getMetrics(w http.ResponseWriter, r *http.Request, mtype string) {
 	hr := &HTTPResponse{w}
 	ctx := GetContext(r)
 	guest := getRequestGuest(r)
-	runner := GetRequestRunner(r)
+	runner := getRequestRunner(r)
 
 	action, err := ctx.GetAction(fmt.Sprintf("%sMetrics", mtype))
 	if err != nil {
