@@ -41,15 +41,13 @@ func getMetrics(w http.ResponseWriter, r *http.Request, mtype string) {
 	switch mtype {
 	case "cpu":
 		hr.JSON(http.StatusOK, response.CPU)
-		return
 	case "nic":
 		hr.JSON(http.StatusOK, response.Nic)
-		return
 	case "disk":
 		hr.JSON(http.StatusOK, response.Disk)
-		return
+	default:
+		hr.JSONError(http.StatusInternalServerError, errors.New("Unknown metric"))
 	}
-	hr.JSONError(http.StatusInternalServerError, errors.New("Unknown metric"))
 }
 
 func getCPUMetrics(w http.ResponseWriter, r *http.Request) {
