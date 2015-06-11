@@ -245,13 +245,6 @@ type Context struct {
 
 Context is the core of the Agent.
 
-#### func  GetContext
-
-```go
-func GetContext(r *http.Request) *Context
-```
-GetContext retrieves a Context value for a request
-
 #### func  NewContext
 
 ```go

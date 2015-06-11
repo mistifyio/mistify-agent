@@ -156,7 +156,7 @@ func Run(ctx *Context, address string) error {
 
 func getMetadata(w http.ResponseWriter, r *http.Request) {
 	hr := HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 
 	metadata := make(map[string]string)
 
@@ -181,7 +181,7 @@ func getMetadata(w http.ResponseWriter, r *http.Request) {
 
 func setMetadata(w http.ResponseWriter, r *http.Request) {
 	hr := HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 
 	var metadata map[string]string
 
@@ -269,8 +269,8 @@ func (hr *HTTPResponse) JSONMsg(code int, msg string) {
 	hr.JSON(code, msgObj)
 }
 
-// GetContext retrieves a Context value for a request
-func GetContext(r *http.Request) *Context {
+// getContext retrieves a Context value for a request
+func getContext(r *http.Request) *Context {
 	if value := context.Get(r, ctxKey); value != nil {
 		return value.(*Context)
 	}

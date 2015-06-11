@@ -10,7 +10,7 @@ import (
 
 func getMetrics(w http.ResponseWriter, r *http.Request, mtype string) {
 	hr := &HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	guest := getRequestGuest(r)
 	runner := getRequestRunner(r)
 

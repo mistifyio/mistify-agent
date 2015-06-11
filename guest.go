@@ -70,7 +70,7 @@ func prefixedActionName(gType, actionName string) string {
 
 func listGuests(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	var guests []*client.Guest
 
 	err := ctx.db.Transaction(func(tx *kvite.Tx) error {
@@ -104,7 +104,7 @@ func listGuests(w http.ResponseWriter, r *http.Request) {
 // NOTE: The config for create should include stages for startup
 func createGuest(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 
 	g := &client.Guest{}
 	if err := json.NewDecoder(r.Body).Decode(g); err != nil {
@@ -168,7 +168,7 @@ func createGuest(w http.ResponseWriter, r *http.Request) {
 func GetGuestMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hr := &HTTPResponse{w}
-		ctx := GetContext(r)
+		ctx := getContext(r)
 		vars := mux.Vars(r)
 
 		id := vars["id"]
@@ -210,7 +210,7 @@ func getGuest(w http.ResponseWriter, r *http.Request) {
 
 func deleteGuest(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	g := getRequestGuest(r)
 
 	err := ctx.PersistGuest(g)
@@ -229,7 +229,7 @@ func getGuestMetadata(w http.ResponseWriter, r *http.Request) {
 
 func setGuestMetadata(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	g := getRequestGuest(r)
 
 	var metadata map[string]string
@@ -258,7 +258,7 @@ func setGuestMetadata(w http.ResponseWriter, r *http.Request) {
 // guestRunnerMiddleware gets and places the runner into the request context
 func guestRunnerMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := GetContext(r)
+		ctx := getContext(r)
 		guest := getRequestGuest(r)
 		runner, err := ctx.GetGuestRunner(guest.Id)
 		if err != nil {
@@ -276,7 +276,7 @@ func guestRunnerMiddleware(h http.Handler) http.Handler {
 func generateGuestAction(actionName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		hr := &HTTPResponse{w}
-		ctx := GetContext(r)
+		ctx := getContext(r)
 		g := getRequestGuest(r)
 		runner := getRequestRunner(r)
 

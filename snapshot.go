@@ -33,7 +33,7 @@ func getEntityID(vars map[string]string) string {
 
 func listSnapshots(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	runner := getRequestRunner(r)
 	vars := mux.Vars(r)
 
@@ -56,7 +56,7 @@ func listSnapshots(w http.ResponseWriter, r *http.Request) {
 
 func getSnapshot(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	runner := getRequestRunner(r)
 	vars := mux.Vars(r)
 	response := &rpc.SnapshotResponse{}
@@ -78,7 +78,7 @@ func getSnapshot(w http.ResponseWriter, r *http.Request) {
 
 func createSnapshot(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	runner := getRequestRunner(r)
 	vars := mux.Vars(r)
 
@@ -112,7 +112,7 @@ func createSnapshot(w http.ResponseWriter, r *http.Request) {
 
 func deleteSnapshot(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	runner := getRequestRunner(r)
 	vars := mux.Vars(r)
 
@@ -140,7 +140,7 @@ func deleteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 func rollbackSnapshot(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	runner := getRequestRunner(r)
 	vars := mux.Vars(r)
 
@@ -170,7 +170,7 @@ func rollbackSnapshot(w http.ResponseWriter, r *http.Request) {
 
 func downloadSnapshot(w http.ResponseWriter, r *http.Request) {
 	hr := &HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	runner := getRequestRunner(r)
 	vars := mux.Vars(r)
 

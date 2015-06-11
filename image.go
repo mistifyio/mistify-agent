@@ -75,7 +75,7 @@ func imageQuery(runner *GuestRunner, actionName string, request *rpc.ImageReques
 // listImages returns a list of images, optionally filtered by type
 func listImages(w http.ResponseWriter, r *http.Request) {
 	hr := HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	vars := mux.Vars(r)
 
 	request := &rpc.ImageRequest{}
@@ -89,7 +89,7 @@ func listImages(w http.ResponseWriter, r *http.Request) {
 
 func getImage(w http.ResponseWriter, r *http.Request) {
 	hr := HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	vars := mux.Vars(r)
 
 	request := &rpc.ImageRequest{
@@ -121,7 +121,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 
 func deleteImage(w http.ResponseWriter, r *http.Request) {
 	hr := HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	vars := mux.Vars(r)
 
 	response := &rpc.ImageResponse{}
@@ -178,7 +178,7 @@ func deleteImage(w http.ResponseWriter, r *http.Request) {
 
 func fetchImage(w http.ResponseWriter, r *http.Request) {
 	hr := HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 
 	request := &rpc.ImageRequest{}
 	err := json.NewDecoder(r.Body).Decode(request)

@@ -214,7 +214,7 @@ func (jobLog *JobLog) prune() error {
 
 func getLatestGuestJobs(w http.ResponseWriter, r *http.Request) {
 	hr := HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	vars := mux.Vars(r)
 
 	jobLog := ctx.JobLog
@@ -233,7 +233,7 @@ func getLatestGuestJobs(w http.ResponseWriter, r *http.Request) {
 
 func getLatestJobs(w http.ResponseWriter, r *http.Request) {
 	hr := HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	vars := mux.Vars(r)
 
 	jobLog := ctx.JobLog
@@ -252,7 +252,7 @@ func getLatestJobs(w http.ResponseWriter, r *http.Request) {
 
 func getJobStatus(w http.ResponseWriter, r *http.Request) {
 	hr := HTTPResponse{w}
-	ctx := GetContext(r)
+	ctx := getContext(r)
 	vars := mux.Vars(r)
 
 	jobLog := ctx.JobLog
