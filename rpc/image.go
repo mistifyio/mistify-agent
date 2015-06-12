@@ -55,7 +55,7 @@ type (
 	SnapshotRequest struct {
 		Id                string `json:"id"`                // Volume ID
 		Dest              string `json:"dest"`              // Destination for clones, creates, etc
-		Recursive         bool   `json:"recursive"`         // Recursively create snapshots for all descendent file systems
+		Recursive         bool   `json:"recursive"`         // Recursively create snapshots for all guest disks
 		DestroyMoreRecent bool   `json:"destroyMoreRecent"` // Destroy more recent snapshots when rolling back
 	}
 

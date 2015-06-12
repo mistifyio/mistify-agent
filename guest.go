@@ -9,6 +9,8 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 	log "github.com/Sirupsen/logrus"
+	"github.com/gorilla/context"
+	"github.com/gorilla/mux"
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/rpc"
@@ -22,6 +24,8 @@ type (
 		*client.Guest
 	}
 )
+
+const requestGuestKey = "requestGuest"
 
 // PersistGuest writes guest data to the data store
 func (ctx *Context) PersistGuest(g *client.Guest) error {
@@ -64,10 +68,12 @@ func prefixedActionName(gType, actionName string) string {
 	return "container" + string(unicode.ToUpper(r)) + actionName[n:]
 }
 
-func listGuests(r *HTTPRequest) *HTTPErrorMessage {
+func listGuests(w http.ResponseWriter, r *http.Request) {
+	hr := &HTTPResponse{w}
+	ctx := getContext(r)
 	var guests []*client.Guest
 
-	err := r.Context.db.Transaction(func(tx *kvite.Tx) error {
+	err := ctx.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("guests")
 		if err != nil {
 			return err
@@ -84,10 +90,11 @@ func listGuests(r *HTTPRequest) *HTTPErrorMessage {
 	})
 
 	if err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
 	}
 
-	return r.JSON(http.StatusOK, guests)
+	hr.JSON(http.StatusOK, guests)
 }
 
 // TODO: A lot of the duplicated code between here and the guest action wrapper
@@ -95,14 +102,19 @@ func listGuests(r *HTTPRequest) *HTTPErrorMessage {
 // simple middleware called first before the guest and runner retrieval
 // middlewares
 // NOTE: The config for create should include stages for startup
-func createGuest(r *HTTPRequest) *HTTPErrorMessage {
+func createGuest(w http.ResponseWriter, r *http.Request) {
+	hr := &HTTPResponse{w}
+	ctx := getContext(r)
+
 	g := &client.Guest{}
-	if err := json.NewDecoder(r.Request.Body).Decode(g); err != nil {
-		return r.NewError(err, http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(g); err != nil {
+		hr.JSONError(http.StatusBadRequest, err)
+		return
 	}
 	if g.Id != "" {
 		if uuid.Parse(g.Id) == nil {
-			return r.NewError(fmt.Errorf("id must be uuid"), http.StatusBadRequest)
+			hr.JSONError(http.StatusBadRequest, fmt.Errorf("id must be uuid"))
+			return
 		}
 	} else {
 		g.Id = uuid.New()
@@ -113,23 +125,25 @@ func createGuest(r *HTTPRequest) *HTTPErrorMessage {
 
 	// TODO: general validations, like memory, disks look sane, etc
 
-	if err := r.Context.PersistGuest(g); err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
-	}
-
-	runner := r.Context.NewGuestRunner(g.Id, 100, 5)
-
-	action, err := r.Context.GetAction(prefixedActionName(g.Type, "create"))
+	action, err := ctx.GetAction(prefixedActionName(g.Type, "create"))
 	if err != nil {
-		return r.NewError(err, http.StatusNotFound)
+		hr.JSONError(http.StatusNotFound, err)
+		return
 	}
+
+	if err := ctx.PersistGuest(g); err != nil {
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
+	}
+
+	runner := ctx.NewGuestRunner(g.Id, 100, 5)
 
 	response := &rpc.GuestResponse{}
 	request := &rpc.GuestRequest{
 		Guest:  g,
 		Action: action.Name,
 	}
-	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
+	pipeline := action.GeneratePipeline(request, response, hr, nil)
 	// PreStageFunc copies the stage args into the request
 	pipeline.PreStageFunc = func(p *Pipeline, s *Stage) error {
 		request.Args = s.Args
@@ -138,131 +152,139 @@ func createGuest(r *HTTPRequest) *HTTPErrorMessage {
 	// PostStageFunc saves the guest and uses it for the next request
 	pipeline.PostStageFunc = func(p *Pipeline, s *Stage) error {
 		request.Guest = response.Guest
-		return r.Context.PersistGuest(response.Guest)
+		return ctx.PersistGuest(response.Guest)
 	}
 
-	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
+	hr.Header().Set("X-Guest-Job-ID", pipeline.ID)
 	err = runner.Process(pipeline)
 	if err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
 	}
-	return r.JSON(http.StatusAccepted, g)
+	hr.JSON(http.StatusAccepted, g)
 }
 
-func withGuest(r *HTTPRequest, fn func(r *HTTPRequest) *HTTPErrorMessage) *HTTPErrorMessage {
-	id := r.Parameter("id")
-	var g client.Guest
-	err := r.Context.db.Transaction(func(tx *kvite.Tx) error {
-		b, err := tx.Bucket("guests")
-		if err != nil {
-			return err
-		}
-		data, err := b.Get(id)
-		if err != nil {
-			return err
-		}
-		if data == nil {
-			return ErrNotFound
-		}
+// getGuestMiddleware retrieves guest information into the request context
+func getGuestMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hr := &HTTPResponse{w}
+		ctx := getContext(r)
+		vars := mux.Vars(r)
 
-		return json.Unmarshal(data, &g)
-	})
-
-	if err != nil {
-		code := http.StatusInternalServerError
-		if err == ErrNotFound {
-			code = http.StatusNotFound
-		}
-		return r.NewError(err, code)
-	}
-	r.Guest = &g
-	r.GuestRunner, err = r.Context.GetGuestRunner(g.Id)
-	if err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
-	}
-	return fn(r)
-}
-
-func getGuest(r *HTTPRequest) *HTTPErrorMessage {
-	return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
-		g := r.Guest
-		return r.JSON(http.StatusOK, g)
-	})
-}
-
-func deleteGuest(r *HTTPRequest) *HTTPErrorMessage {
-	return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
-		g := r.Guest
-		// TODO: Make sure to use the DoneChan here
-		err := r.Context.PersistGuest(g)
-		if err != nil {
-			return r.NewError(err, http.StatusInternalServerError)
-		}
-		return r.JSON(http.StatusAccepted, g)
-	})
-}
-
-func getGuestMetadata(r *HTTPRequest) *HTTPErrorMessage {
-	return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
-		g := r.Guest
-		return r.JSON(http.StatusOK, g.Metadata)
-	})
-}
-
-func setGuestMetadata(r *HTTPRequest) *HTTPErrorMessage {
-	return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
-		g := r.Guest
-		var metadata map[string]string
-		err := json.NewDecoder(r.Request.Body).Decode(&metadata)
-		if err != nil {
-			return r.NewError(err, http.StatusBadRequest)
-		}
-
-		for key, value := range metadata {
-			if value == "" {
-				delete(g.Metadata, key)
-			} else {
-				g.Metadata[key] = value
-			}
-		}
-
-		err = r.Context.PersistGuest(g)
-		if err != nil {
-			return r.NewError(err, http.StatusInternalServerError)
-		}
-		return r.JSON(http.StatusOK, g.Metadata)
-	})
-}
-
-// TODO: These wrappers are ugly nesting. Try to find a cleaner, more modular
-// way to do it
-
-// GuestRunnerWrapper is a middleware that retrieves the runner for a guest
-func (c *Chain) GuestRunnerWrapper(fn func(*HTTPRequest) *HTTPErrorMessage) http.HandlerFunc {
-	return c.RequestWrapper(func(r *HTTPRequest) *HTTPErrorMessage {
-		return withGuest(r, func(r *HTTPRequest) *HTTPErrorMessage {
-			g := r.Guest
-			runner, err := r.Context.GetGuestRunner(g.Id)
+		id := vars["id"]
+		var g client.Guest
+		err := ctx.db.Transaction(func(tx *kvite.Tx) error {
+			b, err := tx.Bucket("guests")
 			if err != nil {
-				return r.NewError(err, http.StatusInternalServerError)
+				return err
+			}
+			data, err := b.Get(id)
+			if err != nil {
+				return err
+			}
+			if data == nil {
+				return ErrNotFound
 			}
 
-			r.GuestRunner = runner
-			return fn(r)
+			return json.Unmarshal(data, &g)
 		})
+
+		if err != nil {
+			code := http.StatusInternalServerError
+			if err == ErrNotFound {
+				code = http.StatusNotFound
+			}
+			hr.JSONError(code, err)
+			return
+		}
+
+		context.Set(r, requestGuestKey, &g)
+		h.ServeHTTP(w, r)
 	})
 }
 
-// GuestActionWrapper wraps an HTTP request with a Guest action to avoid duplicated code
-func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
-	return c.GuestRunnerWrapper(func(r *HTTPRequest) *HTTPErrorMessage {
-		g := r.Guest
-		runner := r.GuestRunner
+func getGuest(w http.ResponseWriter, r *http.Request) {
+	hr := &HTTPResponse{w}
+	hr.JSON(http.StatusOK, getRequestGuest(r))
+}
+
+func deleteGuest(w http.ResponseWriter, r *http.Request) {
+	hr := &HTTPResponse{w}
+	ctx := getContext(r)
+	g := getRequestGuest(r)
+
+	err := ctx.PersistGuest(g)
+	if err != nil {
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
+	}
+	hr.JSON(http.StatusAccepted, g)
+}
+
+func getGuestMetadata(w http.ResponseWriter, r *http.Request) {
+	hr := &HTTPResponse{w}
+	g := getRequestGuest(r)
+	hr.JSON(http.StatusOK, g.Metadata)
+}
+
+func setGuestMetadata(w http.ResponseWriter, r *http.Request) {
+	hr := &HTTPResponse{w}
+	ctx := getContext(r)
+	g := getRequestGuest(r)
+
+	var metadata map[string]string
+	err := json.NewDecoder(r.Body).Decode(&metadata)
+	if err != nil {
+		hr.JSONError(http.StatusBadRequest, err)
+		return
+	}
+
+	for key, value := range metadata {
+		if value == "" {
+			delete(g.Metadata, key)
+		} else {
+			g.Metadata[key] = value
+		}
+	}
+
+	err = ctx.PersistGuest(g)
+	if err != nil {
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
+	}
+	hr.JSON(http.StatusOK, g.Metadata)
+}
+
+// guestRunnerMiddleware gets and places the runner into the request context
+func guestRunnerMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := getContext(r)
+		guest := getRequestGuest(r)
+		runner, err := ctx.GetGuestRunner(guest.Id)
+		if err != nil {
+			hr := &HTTPResponse{w}
+			hr.JSONError(http.StatusInternalServerError, err)
+			return
+		}
+
+		context.Set(r, requestRunnerKey, runner)
+		h.ServeHTTP(w, r)
+	})
+}
+
+// generateGuestAction creates a handler function for a particular guest action
+func generateGuestAction(actionName string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		hr := &HTTPResponse{w}
+		ctx := getContext(r)
+		g := getRequestGuest(r)
+		runner := getRequestRunner(r)
 
 		actionName := prefixedActionName(g.Type, actionName)
-		action, err := r.Context.GetAction(actionName)
+		action, err := ctx.GetAction(actionName)
 		if err != nil {
-			return r.NewError(err, http.StatusNotFound)
+			hr.JSONError(http.StatusNotFound, err)
+			return
 		}
 
 		response := &rpc.GuestResponse{}
@@ -271,7 +293,7 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 			Action: action.Name,
 		}
 		doneChan := make(chan error)
-		pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, doneChan)
+		pipeline := action.GeneratePipeline(request, response, hr, doneChan)
 		// PreStageFunc copies the stage args into the request
 		pipeline.PreStageFunc = func(p *Pipeline, s *Stage) error {
 			request.Args = s.Args
@@ -280,22 +302,22 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 		// PostStageFunc saves the guest and uses it for the next request
 		pipeline.PostStageFunc = func(p *Pipeline, s *Stage) error {
 			request.Guest = response.Guest
-			return r.Context.PersistGuest(response.Guest)
+			return ctx.PersistGuest(response.Guest)
 		}
 
-		r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
+		hr.Header().Set("X-Guest-Job-ID", pipeline.ID)
 		err = runner.Process(pipeline)
 		if err != nil {
-			return r.NewError(err, http.StatusInternalServerError)
+			hr.JSONError(http.StatusInternalServerError, err)
+			return
 		}
 		// Extra processing after the pipeline finishes
 		go func() {
-			err := <-doneChan
-			if err != nil {
+			if <-doneChan != nil {
 				return
 			}
 			if actionName == prefixedActionName(g.Type, "delete") {
-				if err := r.Context.DeleteGuest(g); err != nil {
+				if err := ctx.DeleteGuest(g); err != nil {
 					log.WithFields(log.Fields{
 						"guest": g.Id,
 						"error": err,
@@ -305,6 +327,14 @@ func (c *Chain) GuestActionWrapper(actionName string) http.HandlerFunc {
 				return
 			}
 		}()
-		return r.JSON(http.StatusAccepted, g)
-	})
+		hr.JSON(http.StatusAccepted, g)
+	}
+}
+
+// getRequestGuest retrieves the guest from the request context
+func getRequestGuest(r *http.Request) *client.Guest {
+	if value := context.Get(r, requestGuestKey); value != nil {
+		return value.(*client.Guest)
+	}
+	return nil
 }

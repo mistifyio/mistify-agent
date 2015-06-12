@@ -69,42 +69,6 @@ func (c *Codec) NewRequest(r *http.Request) rpc.CodecRequest
 ```
 NewRequest creates a new request from the codec
 
-#### type ContainerImageRequest
-
-```go
-type ContainerImageRequest struct {
-	ID   string      `json:"id"`   // Image ID
-	Name string      `json:"name"` // Image name
-	Opts interface{} `json:"opts"` // Generic Options. Will need converting
-}
-```
-
-ContainerImageRequest is an image request to the Docker sub-agent
-
-#### func (*ContainerImageRequest) GetLookup
-
-```go
-func (ireq *ContainerImageRequest) GetLookup(d string) string
-```
-GetLookup returns the string to look an image up by based on field priority
-
-#### func (*ContainerImageRequest) GetOpts
-
-```go
-func (ireq *ContainerImageRequest) GetOpts() interface{}
-```
-GetOpts returns the Opts property
-
-#### type ContainerImageResponse
-
-```go
-type ContainerImageResponse struct {
-	Images []*docker.Image `json:"images"` // Slice of one or more images
-}
-```
-
-ContainerImageResponse is an image response from the Docker sub-agent
-
 #### type ContainerRequest
 
 ```go
@@ -187,27 +151,29 @@ GuestResponse is a response from a sub-agent
 
 ```go
 type Image struct {
-	Id       string `json:"id"`       // Unique ID
-	Volume   string `json:"volume"`   // Imported ZVOL
-	Snapshot string `json:"snapshot"` // ZVOL Snapshot
-	Size     uint64 `json:"size"`     // Size in MB
-	Status   string `json:"status"`   // current status of the Image: pending, complete, etc
+	Id       string `json:"id"`                 // Unique ID
+	Type     string `json:"type"`               // Image Type ("container", etc.")
+	Volume   string `json:"volume,omitempty"`   // Imported ZVOL
+	Snapshot string `json:"snapshot,omitempty"` // ZVOL Snapshot
+	Size     uint64 `json:"size"`               // Size in MB
+	Status   string `json:"status,omitempty"`   // current status of the Image: pending, complete, etc
 }
 ```
 
-Image represents a ZFS ZVOL snapshot used for creating VM disks
+Image represents an image used for creating VM disks or containers
 
 #### type ImageRequest
 
 ```go
 type ImageRequest struct {
 	Id     string `json:"id"`     // Image ID
+	Type   string `json:"type"`   // Image Type ("container", etc.)
 	Dest   string `json:"dest"`   // Destination for clones, etc
 	Source string `json:"source"` // Source for fetches. Generally a URL
 }
 ```
 
-ImageRequest is an image request to the Storage sub-agent
+ImageRequest is an image request to the Storage or Container sub-agent
 
 #### type ImageResponse
 
@@ -217,7 +183,7 @@ type ImageResponse struct {
 }
 ```
 
-ImageResponse is an image response from the Storage sub-agent
+ImageResponse is an image response from the Storage or Container sub-agent
 
 #### type Server
 
@@ -287,7 +253,7 @@ Snapshot represents a ZFS Snapshot
 type SnapshotRequest struct {
 	Id                string `json:"id"`                // Volume ID
 	Dest              string `json:"dest"`              // Destination for clones, creates, etc
-	Recursive         bool   `json:"recursive"`         // Recursively create snapshots for all descendent file systems
+	Recursive         bool   `json:"recursive"`         // Recursively create snapshots for all guest disks
 	DestroyMoreRecent bool   `json:"destroyMoreRecent"` // Destroy more recent snapshots when rolling back
 }
 ```

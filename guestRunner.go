@@ -2,8 +2,10 @@ package agent
 
 import (
 	"errors"
+	"net/http"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/gorilla/context"
 	"github.com/mistifyio/mistify-agent/config"
 )
 
@@ -35,6 +37,8 @@ type (
 		QuitChan     chan struct{}
 	}
 )
+
+const requestRunnerKey = "requestRunner"
 
 // NewGuestRunner creates a new GuestRunner
 func (context *Context) NewGuestRunner(guestID string, maxInfo uint, maxStream uint) *GuestRunner {
@@ -223,4 +227,12 @@ func LogRunnerError(guestID string, runnerName string, pipelineID string, logLin
 		"runner":   runnerName,
 		"pipeline": pipelineID,
 	}).Error(logLine)
+}
+
+// getRequestRunner retrieves the guest runner from the request context
+func getRequestRunner(r *http.Request) *GuestRunner {
+	if value := context.Get(r, requestRunnerKey); value != nil {
+		return value.(*GuestRunner)
+	}
+	return nil
 }

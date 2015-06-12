@@ -6,12 +6,12 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/gorilla/mux"
 	"github.com/mistifyio/mistify-agent/rpc"
 )
 
-func imageMultiQuery(r *HTTPRequest, actionBaseName string, request *rpc.ImageRequest) ([]*rpc.Image, *HTTPErrorMessage) {
+func imageMultiQuery(ctx *Context, actionBaseName string, desiredImageType string, request *rpc.ImageRequest) ([]*rpc.Image, *HTTPError) {
 	// Determine the set of actions to query based on desired image type
-	desiredImageType := r.Parameter("type")
 	imageTypes := []string{"", "container"}
 	if desiredImageType != "" {
 		imageTypes = []string{desiredImageType}
@@ -23,9 +23,9 @@ func imageMultiQuery(r *HTTPRequest, actionBaseName string, request *rpc.ImageRe
 	errors := make(chan error, n)
 
 	// Get the action runner
-	runner, err := r.Context.GetAgentRunner()
+	runner, err := ctx.GetAgentRunner()
 	if err != nil {
-		return nil, r.NewError(err, http.StatusInternalServerError)
+		return nil, NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	// Query in parallel
@@ -49,7 +49,7 @@ func imageMultiQuery(r *HTTPRequest, actionBaseName string, request *rpc.ImageRe
 		}
 	}
 	if err != nil {
-		return nil, r.NewError(err, http.StatusInternalServerError)
+		return nil, NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	return images, nil
@@ -70,30 +70,40 @@ func imageQuery(runner *GuestRunner, actionName string, request *rpc.ImageReques
 		return
 	}
 	respChan <- response
-	return
 }
 
 // listImages returns a list of images, optionally filtered by type
-func listImages(r *HTTPRequest) *HTTPErrorMessage {
+func listImages(w http.ResponseWriter, r *http.Request) {
+	hr := HTTPResponse{w}
+	ctx := getContext(r)
+	vars := mux.Vars(r)
+
 	request := &rpc.ImageRequest{}
-	images, err := imageMultiQuery(r, "listImages", request)
+	images, err := imageMultiQuery(ctx, "listImages", vars["type"], request)
 	if err != nil {
-		return err
+		hr.JSON(err.Code, err)
+		return
 	}
-	return r.JSON(http.StatusOK, images)
+	hr.JSON(http.StatusOK, images)
 }
 
-func getImage(r *HTTPRequest) *HTTPErrorMessage {
+func getImage(w http.ResponseWriter, r *http.Request) {
+	hr := HTTPResponse{w}
+	ctx := getContext(r)
+	vars := mux.Vars(r)
+
 	request := &rpc.ImageRequest{
-		Id: r.Parameter("id"),
+		Id: vars["id"],
 	}
-	images, err := imageMultiQuery(r, "getImage", request)
+	images, err := imageMultiQuery(ctx, "getImage", "", request)
 	if err != nil {
-		return err
+		hr.JSON(err.Code, err)
+		return
 	}
 
 	if len(images) < 1 {
-		return r.NewError(ErrNotFound, http.StatusNotFound)
+		hr.JSONError(http.StatusNotFound, ErrNotFound)
+		return
 	}
 
 	// This may happen if more than one backend have the image stored under the
@@ -106,24 +116,30 @@ func getImage(r *HTTPRequest) *HTTPErrorMessage {
 		}).Error("more than one image share id")
 	}
 
-	return r.JSON(http.StatusOK, images[0])
+	hr.JSON(http.StatusOK, images[0])
 }
 
-func deleteImage(r *HTTPRequest) *HTTPErrorMessage {
+func deleteImage(w http.ResponseWriter, r *http.Request) {
+	hr := HTTPResponse{w}
+	ctx := getContext(r)
+	vars := mux.Vars(r)
+
 	response := &rpc.ImageResponse{}
 	request := &rpc.ImageRequest{
-		Id: r.Parameter("id"),
+		Id: vars["id"],
 	}
 
 	// First find the image in order to know the type and, therefore, what
 	// specific action to use to delete it
-	images, mqErr := imageMultiQuery(r, "getImage", request)
+	images, mqErr := imageMultiQuery(ctx, "getImage", "", request)
 	if mqErr != nil {
-		return mqErr
+		hr.JSON(mqErr.Code, mqErr)
+		return
 	}
 
 	if len(images) < 1 {
-		return r.NewError(ErrNotFound, http.StatusNotFound)
+		hr.JSONError(http.StatusNotFound, ErrNotFound)
+		return
 	}
 
 	// This may happen if more than one backend have the image stored under the
@@ -137,52 +153,63 @@ func deleteImage(r *HTTPRequest) *HTTPErrorMessage {
 	}
 
 	// Go ahead with the delete
-	action, err := r.Context.GetAction(prefixedActionName(images[0].Type, "deleteImage"))
+	action, err := ctx.GetAction(prefixedActionName(images[0].Type, "deleteImage"))
 	if err != nil {
-		return r.NewError(err, http.StatusNotFound)
+		hr.JSONError(http.StatusNotFound, err)
+		return
 	}
 
-	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
-	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
+	pipeline := action.GeneratePipeline(request, response, hr, nil)
+	hr.Header().Set("X-Guest-Job-ID", pipeline.ID)
 
-	runner, err := r.Context.GetAgentRunner()
+	runner, err := ctx.GetAgentRunner()
 	if err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
 	}
 
 	if err := runner.Process(pipeline); err != nil {
 		// how to check for not found??
-		return r.NewError(err, http.StatusInternalServerError)
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
 	}
-	return r.JSON(http.StatusAccepted, struct{}{})
+	hr.JSON(http.StatusAccepted, struct{}{})
 }
 
-func fetchImage(r *HTTPRequest) *HTTPErrorMessage {
+func fetchImage(w http.ResponseWriter, r *http.Request) {
+	hr := HTTPResponse{w}
+	ctx := getContext(r)
+
 	request := &rpc.ImageRequest{}
-	err := json.NewDecoder(r.Request.Body).Decode(request)
+	err := json.NewDecoder(r.Body).Decode(request)
 	if err != nil {
-		return r.NewError(err, http.StatusBadRequest)
+		hr.JSONError(http.StatusBadRequest, err)
+		return
 	}
 	if request.Id == "" {
-		return r.NewError(errors.New("missing id"), http.StatusBadRequest)
+		hr.JSONError(http.StatusBadRequest, errors.New("missing id"))
+		return
 	}
 
 	response := &rpc.ImageResponse{}
-	action, err := r.Context.GetAction(prefixedActionName(request.Type, "fetchImage"))
+	action, err := ctx.GetAction(prefixedActionName(request.Type, "fetchImage"))
 	if err != nil {
-		return r.NewError(err, http.StatusNotFound)
+		hr.JSONError(http.StatusNotFound, err)
+		return
 	}
-	pipeline := action.GeneratePipeline(request, response, r.ResponseWriter, nil)
-	r.ResponseWriter.Header().Set("X-Guest-Job-ID", pipeline.ID)
+	pipeline := action.GeneratePipeline(request, response, hr, nil)
+	hr.Header().Set("X-Guest-Job-ID", pipeline.ID)
 
-	runner, err := r.Context.GetAgentRunner()
+	runner, err := ctx.GetAgentRunner()
 	if err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
 	}
 
 	if err := runner.Process(pipeline); err != nil {
-		return r.NewError(err, http.StatusInternalServerError)
+		hr.JSONError(http.StatusInternalServerError, err)
+		return
 	}
 
-	return r.JSON(http.StatusAccepted, response)
+	hr.JSON(http.StatusAccepted, response)
 }
