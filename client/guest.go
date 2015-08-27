@@ -26,6 +26,7 @@ type (
 		Netmask string `json:"netmask"`
 		Gateway string `json:"gateway"`
 		Device  string `json:"device,omitempty"`
+		VLANs   []int  `json:"vlans"`
 	}
 
 	// Disk is a guest storage disk
