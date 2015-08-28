@@ -95,7 +95,7 @@ type Guest struct {
 	Disks    []Disk            `json:"disks,omitempty"`
 	State    string            `json:"state,omitempty"`  //current State
 	Memory   uint              `json:"memory,omitempty"` // Memory in MB
-	Cpu      uint              `json:"cpu,omitempty"`    // number of Virtual CPU's
+	CPU      uint              `json:"cpu,omitempty"`    // number of Virtual CPU's
 	VNC      int               `json:"vnc,omitempty"`    // VNC port
 	Metadata map[string]string `json:"metadata,omitempty"`
 }

@@ -59,7 +59,7 @@
         "cpuMetrics": {
             "stages": [
                 {
-                    "method": "Test.CpuMetrics",
+                    "method": "Test.CPUMetrics",
                     "service": "test"
                 }
             ]

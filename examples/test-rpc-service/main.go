@@ -78,8 +78,8 @@ func (t *Test) Shutdown(r *http.Request, request *rpc.GuestRequest, response *rp
 	return nil
 }
 
-// CpuMetrics retrieves CPU metrics.  Currently, only one sub-agent service is called for this.
-func (t *Test) CpuMetrics(r *http.Request, request *rpc.GuestMetricsRequest, response *rpc.GuestMetricsResponse) error {
+// CPUMetrics retrieves CPU metrics.  Currently, only one sub-agent service is called for this.
+func (t *Test) CPUMetrics(r *http.Request, request *rpc.GuestMetricsRequest, response *rpc.GuestMetricsResponse) error {
 	*response = rpc.GuestMetricsResponse{
 		Guest: request.Guest,
 		Type:  "cpu",
