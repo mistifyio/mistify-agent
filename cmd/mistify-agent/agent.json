@@ -131,7 +131,7 @@
         "cpuMetrics": {
             "stages": [
                 {
-                    "method": "Libvirt.CpuMetrics",
+                    "method": "Libvirt.CPUMetrics",
                     "service": "libvirt"
                 }
             ]
