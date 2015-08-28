@@ -1,5 +1,5 @@
 /*
-Mistify Agent is the core agent for managing a hypervisor. It runs local on the
+Package agent is the core Mistify Agent for managing a hypervisor. It runs local on the
 hypervisor and exposes an HTTP API for managing virtual machines.
 
 General Architecture

@@ -137,19 +137,19 @@ func (ctx *Context) RunGuests() error {
 }
 
 // CreateJobLog creates a new job log
-func (context *Context) CreateJobLog() error {
+func (ctx *Context) CreateJobLog() error {
 	// Attempt to load from database
-	jobLog, err := context.GetJobLog()
+	jobLog, err := ctx.GetJobLog()
 	if err == nil {
-		context.JobLog = jobLog
+		ctx.JobLog = jobLog
 		return nil
 	}
 	if err != ErrNotFound {
 		return err
 	}
 	// Create a new one
-	context.JobLog = &JobLog{
-		Context:    context,
+	ctx.JobLog = &JobLog{
+		Context:    ctx,
 		Index:      make(map[string]int),
 		GuestIndex: make(map[string][]int),
 		Jobs:       make([]*Job, 0, MaxLoggedJobs+1),
@@ -157,7 +157,7 @@ func (context *Context) CreateJobLog() error {
 
 	go func() {
 		for {
-			logx.LogReturnedErr(context.JobLog.prune, nil, "failed to prune log")
+			logx.LogReturnedErr(ctx.JobLog.prune, nil, "failed to prune log")
 			time.Sleep(60 * time.Second)
 		}
 	}()
@@ -166,11 +166,11 @@ func (context *Context) CreateJobLog() error {
 }
 
 // GetJobLog retrieves a job log
-func (context *Context) GetJobLog() (*JobLog, error) {
+func (ctx *Context) GetJobLog() (*JobLog, error) {
 	jobLog := &JobLog{
-		Context: context,
+		Context: ctx,
 	}
-	err := context.db.Transaction(func(tx *kvite.Tx) error {
+	err := ctx.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("joblog")
 		if err != nil {
 			return err

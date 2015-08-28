@@ -35,7 +35,7 @@ func imageMultiQuery(ctx *Context, actionBaseName string, desiredImageType strin
 	}
 
 	// Wait for all to finish and aggregate results
-	images := make([]*rpc.Image, 0)
+	var images []*rpc.Image
 	for i := 0; i < n; i++ {
 		select {
 		case resp := <-resps:
