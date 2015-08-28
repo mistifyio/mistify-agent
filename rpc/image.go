@@ -6,7 +6,7 @@ type (
 
 	// Image represents an image used for creating VM disks or containers
 	Image struct {
-		Id       string `json:"id"`                 // Unique ID
+		ID       string `json:"id"`                 // Unique ID
 		Type     string `json:"type"`               // Image Type ("container", etc.")
 		Volume   string `json:"volume,omitempty"`   // Imported ZVOL
 		Snapshot string `json:"snapshot,omitempty"` // ZVOL Snapshot
@@ -16,20 +16,20 @@ type (
 
 	// Volume represents a ZFS ZVOL
 	Volume struct {
-		Id     string `json:"id"`     // Unique ID
+		ID     string `json:"id"`     // Unique ID
 		Size   uint64 `json:"size"`   // Size in MB
 		Device string `json:"device"` // Device in /dev to use
 	}
 
 	// Snapshot represents a ZFS Snapshot
 	Snapshot struct {
-		Id   string `json:"id"`   // Unique ID
+		ID   string `json:"id"`   // Unique ID
 		Size uint64 `json:"size"` // Size in MB
 	}
 
 	// ImageRequest is an image request to the Storage or Container sub-agent
 	ImageRequest struct {
-		Id     string `json:"id"`     // Image ID
+		ID     string `json:"id"`     // Image ID
 		Type   string `json:"type"`   // Image Type ("container", etc.)
 		Dest   string `json:"dest"`   // Destination for clones, etc
 		Source string `json:"source"` // Source for fetches. Generally a URL
@@ -42,7 +42,7 @@ type (
 
 	// VolumeRequest is a volume request to the Storage sub-agent. Currently, only create and delete are used.
 	VolumeRequest struct {
-		Id   string `json:"id"`   // Volume ID
+		ID   string `json:"id"`   // Volume ID
 		Size uint64 `json:"size"` //  Size in MB
 	}
 
@@ -53,7 +53,7 @@ type (
 
 	// SnapshotRequest is a snapshot request for the Storage sub-agent
 	SnapshotRequest struct {
-		Id                string `json:"id"`                // Volume ID
+		ID                string `json:"id"`                // Volume ID
 		Dest              string `json:"dest"`              // Destination for clones, creates, etc
 		Recursive         bool   `json:"recursive"`         // Recursively create snapshots for all guest disks
 		DestroyMoreRecent bool   `json:"destroyMoreRecent"` // Destroy more recent snapshots when rolling back

@@ -38,7 +38,7 @@ func listSnapshots(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	response := &rpc.SnapshotResponse{}
-	request := &rpc.SnapshotRequest{Id: getEntityID(vars)}
+	request := &rpc.SnapshotRequest{ID: getEntityID(vars)}
 	action, err := ctx.GetAction("listSnapshots")
 	if err != nil {
 		hr.JSONError(http.StatusNotFound, err)
@@ -60,7 +60,7 @@ func getSnapshot(w http.ResponseWriter, r *http.Request) {
 	runner := getRequestRunner(r)
 	vars := mux.Vars(r)
 	response := &rpc.SnapshotResponse{}
-	request := &rpc.SnapshotRequest{Id: getEntityID(vars)}
+	request := &rpc.SnapshotRequest{ID: getEntityID(vars)}
 	action, err := ctx.GetAction("getSnapshot")
 	if err != nil {
 		hr.JSONError(http.StatusNotFound, err)
@@ -89,7 +89,7 @@ func createSnapshot(w http.ResponseWriter, r *http.Request) {
 		hr.JSONError(http.StatusBadRequest, err)
 		return
 	}
-	request.Id = getEntityID(vars)
+	request.ID = getEntityID(vars)
 	// If no disk is specified, recursively snapshot all of the guest's disks.
 	request.Recursive = vars["disk"] == ""
 	if request.Dest == "" {
@@ -120,7 +120,7 @@ func deleteSnapshot(w http.ResponseWriter, r *http.Request) {
 	// If no disk is specified, recursively delete all of the guest's disks'
 	// snapshots.
 	request := &rpc.SnapshotRequest{
-		Id:        getEntityID(vars),
+		ID:        getEntityID(vars),
 		Recursive: vars["disk"] == "",
 	}
 	action, err := ctx.GetAction("deleteSnapshot")
@@ -151,7 +151,7 @@ func rollbackSnapshot(w http.ResponseWriter, r *http.Request) {
 		hr.JSONError(http.StatusNotFound, err)
 		return
 	}
-	request.Id = getEntityID(vars)
+	request.ID = getEntityID(vars)
 	action, err := ctx.GetAction("rollbackSnapshot")
 	if err != nil {
 		hr.JSONError(http.StatusNotFound, err)
@@ -178,7 +178,7 @@ func downloadSnapshot(w http.ResponseWriter, r *http.Request) {
 	// If no disk is specified, recursively download all of the guest's disks'
 	// snapshots.
 	request := &rpc.SnapshotRequest{
-		Id:        getEntityID(vars),
+		ID:        getEntityID(vars),
 		Recursive: vars["disk"] == "",
 	}
 	action, err := ctx.GetAction("downloadSnapshot")

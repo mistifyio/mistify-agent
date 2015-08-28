@@ -130,7 +130,7 @@ func (ctx *Context) RunGuests() error {
 				// should this be fatal if it just fails on one guest??
 				return err
 			}
-			_ = ctx.NewGuestRunner(guest.Id, 100, 5)
+			_ = ctx.NewGuestRunner(guest.ID, 100, 5)
 			return nil
 		})
 	})

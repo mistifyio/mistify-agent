@@ -4,7 +4,7 @@ type (
 	// Guest is a guest virtual machine
 	// +gen * slice:"Where,Each,SortBy" set
 	Guest struct {
-		Id       string            `json:"id"`
+		ID       string            `json:"id"`
 		Type     string            `json:"type,omitempty"`
 		Image    string            `json:"image,omitempty"`
 		Nics     []Nic             `json:"nics,omitempty"`

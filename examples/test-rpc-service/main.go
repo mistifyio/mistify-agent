@@ -123,7 +123,7 @@ func (t *Test) ListImages(r *http.Request, request *rpc.ImageRequest, response *
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
 			&rpc.Image{
-				Id:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
+				ID:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
 				Size:     1024,
@@ -139,7 +139,7 @@ func (t *Test) GetImage(r *http.Request, request *rpc.ImageRequest, response *rp
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
 			&rpc.Image{
-				Id:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
+				ID:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
 				Size:     1024,
@@ -155,7 +155,7 @@ func (t *Test) DeleteImage(r *http.Request, request *rpc.ImageRequest, response 
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
 			&rpc.Image{
-				Id:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
+				ID:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
 				Size:     1024,
@@ -171,7 +171,7 @@ func (t *Test) RequestImage(r *http.Request, request *rpc.ImageRequest, response
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
 			&rpc.Image{
-				Id:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
+				ID:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
 				Size:     1024,
@@ -187,7 +187,7 @@ func (t *Test) ListSnapshots(r *http.Request, request *rpc.SnapshotRequest, resp
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
 			&rpc.Snapshot{
-				Id:   fmt.Sprintf("%s@%s", filepath.Join("mistify", request.Id), "bar"),
+				ID:   fmt.Sprintf("%s@%s", filepath.Join("mistify", request.ID), "bar"),
 				Size: 1024,
 			},
 		},
@@ -200,7 +200,7 @@ func (t *Test) GetSnapshot(r *http.Request, request *rpc.SnapshotRequest, respon
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
 			&rpc.Snapshot{
-				Id:   filepath.Join("mistify", request.Id),
+				ID:   filepath.Join("mistify", request.ID),
 				Size: 1024,
 			},
 		},
@@ -213,7 +213,7 @@ func (t *Test) CreateSnapshot(r *http.Request, request *rpc.SnapshotRequest, res
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
 			&rpc.Snapshot{
-				Id:   fmt.Sprintf("%s@%s", filepath.Join("mistify", request.Id), request.Dest),
+				ID:   fmt.Sprintf("%s@%s", filepath.Join("mistify", request.ID), request.Dest),
 				Size: 1024,
 			},
 		},
@@ -226,7 +226,7 @@ func (t *Test) DeleteSnapshot(r *http.Request, request *rpc.SnapshotRequest, res
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
 			&rpc.Snapshot{
-				Id:   filepath.Join("mistify", request.Id),
+				ID:   filepath.Join("mistify", request.ID),
 				Size: 1024,
 			},
 		},
@@ -239,7 +239,7 @@ func (t *Test) RollbackSnapshot(r *http.Request, request *rpc.SnapshotRequest, r
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
 			&rpc.Snapshot{
-				Id:   filepath.Join("mistify", request.Id),
+				ID:   filepath.Join("mistify", request.ID),
 				Size: 1024,
 			},
 		},
@@ -257,7 +257,7 @@ func (t *Test) DownloadSnapshot(w http.ResponseWriter, r *http.Request) {
 // CreateContainer creates a container
 func (t *Test) CreateContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
 	response.Guest = &client.Guest{
-		Id:    "foobar",
+		ID:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
 	}
@@ -267,7 +267,7 @@ func (t *Test) CreateContainer(h *http.Request, request *rpc.GuestRequest, respo
 // StartContainer starts a container
 func (t *Test) StartContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
 	response.Guest = &client.Guest{
-		Id:    "foobar",
+		ID:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
 	}
@@ -277,7 +277,7 @@ func (t *Test) StartContainer(h *http.Request, request *rpc.GuestRequest, respon
 // RebootContainer reboots a container
 func (t *Test) RebootContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
 	response.Guest = &client.Guest{
-		Id:    "foobar",
+		ID:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
 	}
@@ -287,7 +287,7 @@ func (t *Test) RebootContainer(h *http.Request, request *rpc.GuestRequest, respo
 // RestartContainer reboots a container
 func (t *Test) RestartContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
 	response.Guest = &client.Guest{
-		Id:    "foobar",
+		ID:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
 	}
@@ -297,7 +297,7 @@ func (t *Test) RestartContainer(h *http.Request, request *rpc.GuestRequest, resp
 // StopContainer stops a container
 func (t *Test) StopContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
 	response.Guest = &client.Guest{
-		Id:    "foobar",
+		ID:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
 	}
@@ -307,7 +307,7 @@ func (t *Test) StopContainer(h *http.Request, request *rpc.GuestRequest, respons
 // DeleteContainer deletes a container
 func (t *Test) DeleteContainer(h *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
 	response.Guest = &client.Guest{
-		Id:    "foobar",
+		ID:    "foobar",
 		Type:  "container",
 		Image: "asdfasdfpoih",
 	}
