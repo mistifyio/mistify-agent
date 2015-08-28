@@ -54,8 +54,8 @@ type (
 
 	// GuestCPUMetrics is a set of metrics on a guest's cpu
 	GuestCPUMetrics struct {
-		CpuTime  float64 `json:"cpu_time"`
-		VcpuTime float64 `json:"vcpu_time"`
+		CPUTime  float64 `json:"cpu_time"`
+		VCPUTime float64 `json:"vcpu_time"`
 	}
 
 	// GuestNicMetrics is a set of metrics on a guests's nic

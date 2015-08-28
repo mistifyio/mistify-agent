@@ -107,8 +107,8 @@ Guest is a guest virtual machine +gen * slice:"Where,Each,SortBy" set
 
 ```go
 type GuestCPUMetrics struct {
-	CpuTime  float64 `json:"cpu_time"`
-	VcpuTime float64 `json:"vcpu_time"`
+	CPUTime  float64 `json:"cpu_time"`
+	VCPUTime float64 `json:"vcpu_time"`
 }
 ```
 
