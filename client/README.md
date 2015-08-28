@@ -103,16 +103,16 @@ type Guest struct {
 
 Guest is a guest virtual machine +gen * slice:"Where,Each,SortBy" set
 
-#### type GuestCpuMetrics
+#### type GuestCPUMetrics
 
 ```go
-type GuestCpuMetrics struct {
+type GuestCPUMetrics struct {
 	CpuTime  float64 `json:"cpu_time"`
 	VcpuTime float64 `json:"vcpu_time"`
 }
 ```
 
-GuestCpuMetrics is a set of metrics on a guest's cpu
+GuestCPUMetrics is a set of metrics on a guest's cpu
 
 #### type GuestDiskMetrics
 
@@ -325,6 +325,7 @@ type Nic struct {
 	Netmask string `json:"netmask"`
 	Gateway string `json:"gateway"`
 	Device  string `json:"device,omitempty"`
+	VLANs   []int  `json:"vlans"`
 }
 ```
 

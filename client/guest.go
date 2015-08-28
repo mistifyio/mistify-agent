@@ -52,8 +52,8 @@ type (
 		FlushTime  float64 `json:"flush_time"`
 	}
 
-	// GuestCpuMetrics is a set of metrics on a guest's cpu
-	GuestCpuMetrics struct {
+	// GuestCPUMetrics is a set of metrics on a guest's cpu
+	GuestCPUMetrics struct {
 		CpuTime  float64 `json:"cpu_time"`
 		VcpuTime float64 `json:"vcpu_time"`
 	}

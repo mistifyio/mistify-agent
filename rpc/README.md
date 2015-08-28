@@ -117,7 +117,7 @@ type GuestMetricsResponse struct {
 	Type  string                              `json:"type"`           // Type of metrics returned
 	Disk  map[string]*client.GuestDiskMetrics `json:"disk,omitempty"` // Disk metrics
 	Nic   map[string]*client.GuestNicMetrics  `json:"nic,omitempty"`  // Network Interface metrics
-	CPU   []*client.GuestCpuMetrics           `json:"cpu,omitempty"`  // CPU metrics
+	CPU   []*client.GuestCPUMetrics           `json:"cpu,omitempty"`  // CPU metrics
 }
 ```
 

@@ -83,8 +83,8 @@ func (t *Test) CpuMetrics(r *http.Request, request *rpc.GuestMetricsRequest, res
 	*response = rpc.GuestMetricsResponse{
 		Guest: request.Guest,
 		Type:  "cpu",
-		CPU: []*client.GuestCpuMetrics{
-			&client.GuestCpuMetrics{},
+		CPU: []*client.GuestCPUMetrics{
+			&client.GuestCPUMetrics{},
 		},
 	}
 	return nil
