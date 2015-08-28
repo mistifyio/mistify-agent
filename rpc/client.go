@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	rpcJSON "github.com/gorilla/rpc/json"
+	logx "github.com/mistifyio/mistify-logrus-ext"
 )
 
 type (
@@ -40,7 +41,7 @@ func (c *Client) Do(method string, request interface{}, response interface{}) er
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer logx.LogReturnedErr(resp.Body.Close, nil, "failed to close response body")
 
 	if resp.StatusCode >= http.StatusBadRequest {
 		var buf bytes.Buffer
@@ -69,7 +70,7 @@ func (c *Client) DoRaw(request interface{}, rw http.ResponseWriter) {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer resp.Body.Close()
+	defer logx.LogReturnedErr(resp.Body.Close, nil, "failed to close response body")
 
 	if resp.StatusCode != http.StatusOK {
 		buf := new(bytes.Buffer)

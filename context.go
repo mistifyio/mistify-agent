@@ -10,6 +10,7 @@ import (
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/config"
+	logx "github.com/mistifyio/mistify-logrus-ext"
 )
 
 type (
@@ -156,7 +157,7 @@ func (context *Context) CreateJobLog() error {
 
 	go func() {
 		for {
-			context.JobLog.prune()
+			logx.LogReturnedErr(context.JobLog.prune, nil, "failed to prune log")
 			time.Sleep(60 * time.Second)
 		}
 	}()

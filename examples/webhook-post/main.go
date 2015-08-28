@@ -78,7 +78,7 @@ func (w *Webhook) Post(r *http.Request, request *rpc.GuestRequest, response *rpc
 		return err
 	}
 
-	resp.Body.Close()
+	logx.LogReturnedErr(resp.Body.Close, nil, "failed to close response body")
 
 	*response = rpc.GuestResponse{
 		Guest: request.Guest,

@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"path/filepath"
 	"time"
+
+	logx "github.com/mistifyio/mistify-logrus-ext"
 )
 
 type (
@@ -96,7 +98,7 @@ func (c *Client) doRequest(method, path string, input interface{}, expectedStatu
 		return err
 	}
 
-	defer resp.Body.Close()
+	defer logx.LogReturnedErr(resp.Body.Close, nil, "failed to close response body")
 
 	if resp.StatusCode != expectedStatus {
 		return fmt.Errorf("expected %d but got %d", expectedStatus, resp.StatusCode)
