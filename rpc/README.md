@@ -117,7 +117,7 @@ type GuestMetricsResponse struct {
 	Type  string                              `json:"type"`           // Type of metrics returned
 	Disk  map[string]*client.GuestDiskMetrics `json:"disk,omitempty"` // Disk metrics
 	Nic   map[string]*client.GuestNicMetrics  `json:"nic,omitempty"`  // Network Interface metrics
-	CPU   []*client.GuestCpuMetrics           `json:"cpu,omitempty"`  // CPU metrics
+	CPU   []*client.GuestCPUMetrics           `json:"cpu,omitempty"`  // CPU metrics
 }
 ```
 
@@ -151,7 +151,7 @@ GuestResponse is a response from a sub-agent
 
 ```go
 type Image struct {
-	Id       string `json:"id"`                 // Unique ID
+	ID       string `json:"id"`                 // Unique ID
 	Type     string `json:"type"`               // Image Type ("container", etc.")
 	Volume   string `json:"volume,omitempty"`   // Imported ZVOL
 	Snapshot string `json:"snapshot,omitempty"` // ZVOL Snapshot
@@ -166,7 +166,7 @@ Image represents an image used for creating VM disks or containers
 
 ```go
 type ImageRequest struct {
-	Id     string `json:"id"`     // Image ID
+	ID     string `json:"id"`     // Image ID
 	Type   string `json:"type"`   // Image Type ("container", etc.)
 	Dest   string `json:"dest"`   // Destination for clones, etc
 	Source string `json:"source"` // Source for fetches. Generally a URL
@@ -240,7 +240,7 @@ RegisterService is a helper for registering a new RPC service
 
 ```go
 type Snapshot struct {
-	Id   string `json:"id"`   // Unique ID
+	ID   string `json:"id"`   // Unique ID
 	Size uint64 `json:"size"` // Size in MB
 }
 ```
@@ -251,7 +251,7 @@ Snapshot represents a ZFS Snapshot
 
 ```go
 type SnapshotRequest struct {
-	Id                string `json:"id"`                // Volume ID
+	ID                string `json:"id"`                // Volume ID
 	Dest              string `json:"dest"`              // Destination for clones, creates, etc
 	Recursive         bool   `json:"recursive"`         // Recursively create snapshots for all guest disks
 	DestroyMoreRecent bool   `json:"destroyMoreRecent"` // Destroy more recent snapshots when rolling back
@@ -274,7 +274,7 @@ SnapshotResponse is a snapshot response for the Storage sub-agent
 
 ```go
 type Volume struct {
-	Id     string `json:"id"`     // Unique ID
+	ID     string `json:"id"`     // Unique ID
 	Size   uint64 `json:"size"`   // Size in MB
 	Device string `json:"device"` // Device in /dev to use
 }
@@ -286,7 +286,7 @@ Volume represents a ZFS ZVOL
 
 ```go
 type VolumeRequest struct {
-	Id   string `json:"id"`   // Volume ID
+	ID   string `json:"id"`   // Volume ID
 	Size uint64 `json:"size"` //  Size in MB
 }
 ```

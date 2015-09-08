@@ -4,14 +4,14 @@ type (
 	// Guest is a guest virtual machine
 	// +gen * slice:"Where,Each,SortBy" set
 	Guest struct {
-		Id       string            `json:"id"`
+		ID       string            `json:"id"`
 		Type     string            `json:"type,omitempty"`
 		Image    string            `json:"image,omitempty"`
 		Nics     []Nic             `json:"nics,omitempty"`
 		Disks    []Disk            `json:"disks,omitempty"`
 		State    string            `json:"state,omitempty"`  //current State
 		Memory   uint              `json:"memory,omitempty"` // Memory in MB
-		Cpu      uint              `json:"cpu,omitempty"`    // number of Virtual CPU's
+		CPU      uint              `json:"cpu,omitempty"`    // number of Virtual CPU's
 		VNC      int               `json:"vnc,omitempty"`    // VNC port
 		Metadata map[string]string `json:"metadata,omitempty"`
 	}
@@ -52,10 +52,10 @@ type (
 		FlushTime  float64 `json:"flush_time"`
 	}
 
-	// GuestCpuMetrics is a set of metrics on a guest's cpu
-	GuestCpuMetrics struct {
-		CpuTime  float64 `json:"cpu_time"`
-		VcpuTime float64 `json:"vcpu_time"`
+	// GuestCPUMetrics is a set of metrics on a guest's cpu
+	GuestCPUMetrics struct {
+		CPUTime  float64 `json:"cpu_time"`
+		VCPUTime float64 `json:"vcpu_time"`
 	}
 
 	// GuestNicMetrics is a set of metrics on a guests's nic

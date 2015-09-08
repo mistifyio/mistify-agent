@@ -88,14 +88,14 @@ Disk is a guest storage disk
 
 ```go
 type Guest struct {
-	Id       string            `json:"id"`
+	ID       string            `json:"id"`
 	Type     string            `json:"type,omitempty"`
 	Image    string            `json:"image,omitempty"`
 	Nics     []Nic             `json:"nics,omitempty"`
 	Disks    []Disk            `json:"disks,omitempty"`
 	State    string            `json:"state,omitempty"`  //current State
 	Memory   uint              `json:"memory,omitempty"` // Memory in MB
-	Cpu      uint              `json:"cpu,omitempty"`    // number of Virtual CPU's
+	CPU      uint              `json:"cpu,omitempty"`    // number of Virtual CPU's
 	VNC      int               `json:"vnc,omitempty"`    // VNC port
 	Metadata map[string]string `json:"metadata,omitempty"`
 }
@@ -103,16 +103,16 @@ type Guest struct {
 
 Guest is a guest virtual machine +gen * slice:"Where,Each,SortBy" set
 
-#### type GuestCpuMetrics
+#### type GuestCPUMetrics
 
 ```go
-type GuestCpuMetrics struct {
-	CpuTime  float64 `json:"cpu_time"`
-	VcpuTime float64 `json:"vcpu_time"`
+type GuestCPUMetrics struct {
+	CPUTime  float64 `json:"cpu_time"`
+	VCPUTime float64 `json:"vcpu_time"`
 }
 ```
 
-GuestCpuMetrics is a set of metrics on a guest's cpu
+GuestCPUMetrics is a set of metrics on a guest's cpu
 
 #### type GuestDiskMetrics
 
@@ -325,6 +325,7 @@ type Nic struct {
 	Netmask string `json:"netmask"`
 	Gateway string `json:"gateway"`
 	Device  string `json:"device,omitempty"`
+	VLANs   []int  `json:"vlans"`
 }
 ```
 

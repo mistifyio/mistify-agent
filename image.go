@@ -35,7 +35,7 @@ func imageMultiQuery(ctx *Context, actionBaseName string, desiredImageType strin
 	}
 
 	// Wait for all to finish and aggregate results
-	images := make([]*rpc.Image, 0)
+	var images []*rpc.Image
 	for i := 0; i < n; i++ {
 		select {
 		case resp := <-resps:
@@ -93,7 +93,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	request := &rpc.ImageRequest{
-		Id: vars["id"],
+		ID: vars["id"],
 	}
 	images, err := imageMultiQuery(ctx, "getImage", "", request)
 	if err != nil {
@@ -111,7 +111,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	// all pulled from a central image server that assigns ids.
 	if len(images) > 1 {
 		log.WithFields(log.Fields{
-			"imageID": request.Id,
+			"imageID": request.ID,
 			"images":  images,
 		}).Error("more than one image share id")
 	}
@@ -126,7 +126,7 @@ func deleteImage(w http.ResponseWriter, r *http.Request) {
 
 	response := &rpc.ImageResponse{}
 	request := &rpc.ImageRequest{
-		Id: vars["id"],
+		ID: vars["id"],
 	}
 
 	// First find the image in order to know the type and, therefore, what
@@ -147,7 +147,7 @@ func deleteImage(w http.ResponseWriter, r *http.Request) {
 	// all pulled from a central image server that assigns ids.
 	if len(images) > 1 {
 		log.WithFields(log.Fields{
-			"imageID": request.Id,
+			"imageID": request.ID,
 			"images":  images,
 		}).Error("more than one image share id")
 	}
@@ -186,7 +186,7 @@ func fetchImage(w http.ResponseWriter, r *http.Request) {
 		hr.JSONError(http.StatusBadRequest, err)
 		return
 	}
-	if request.Id == "" {
+	if request.ID == "" {
 		hr.JSONError(http.StatusBadRequest, errors.New("missing id"))
 		return
 	}

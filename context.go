@@ -10,6 +10,7 @@ import (
 	"github.com/mistifyio/kvite"
 	"github.com/mistifyio/mistify-agent/client"
 	"github.com/mistifyio/mistify-agent/config"
+	logx "github.com/mistifyio/mistify-logrus-ext"
 )
 
 type (
@@ -129,26 +130,26 @@ func (ctx *Context) RunGuests() error {
 				// should this be fatal if it just fails on one guest??
 				return err
 			}
-			_ = ctx.NewGuestRunner(guest.Id, 100, 5)
+			_ = ctx.NewGuestRunner(guest.ID, 100, 5)
 			return nil
 		})
 	})
 }
 
 // CreateJobLog creates a new job log
-func (context *Context) CreateJobLog() error {
+func (ctx *Context) CreateJobLog() error {
 	// Attempt to load from database
-	jobLog, err := context.GetJobLog()
+	jobLog, err := ctx.GetJobLog()
 	if err == nil {
-		context.JobLog = jobLog
+		ctx.JobLog = jobLog
 		return nil
 	}
 	if err != ErrNotFound {
 		return err
 	}
 	// Create a new one
-	context.JobLog = &JobLog{
-		Context:    context,
+	ctx.JobLog = &JobLog{
+		Context:    ctx,
 		Index:      make(map[string]int),
 		GuestIndex: make(map[string][]int),
 		Jobs:       make([]*Job, 0, MaxLoggedJobs+1),
@@ -156,7 +157,7 @@ func (context *Context) CreateJobLog() error {
 
 	go func() {
 		for {
-			context.JobLog.prune()
+			logx.LogReturnedErr(ctx.JobLog.prune, nil, "failed to prune log")
 			time.Sleep(60 * time.Second)
 		}
 	}()
@@ -165,11 +166,11 @@ func (context *Context) CreateJobLog() error {
 }
 
 // GetJobLog retrieves a job log
-func (context *Context) GetJobLog() (*JobLog, error) {
+func (ctx *Context) GetJobLog() (*JobLog, error) {
 	jobLog := &JobLog{
-		Context: context,
+		Context: ctx,
 	}
-	err := context.db.Transaction(func(tx *kvite.Tx) error {
+	err := ctx.db.Transaction(func(tx *kvite.Tx) error {
 		b, err := tx.Bucket("joblog")
 		if err != nil {
 			return err

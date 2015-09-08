@@ -33,7 +33,7 @@ type (
 func (w *Webhook) Post(r *http.Request, request *rpc.GuestRequest, response *rpc.GuestResponse) error {
 
 	// just in case
-	if request.Guest == nil || request.Guest.Id == "" {
+	if request.Guest == nil || request.Guest.ID == "" {
 		return errors.New("invalid guest")
 	}
 
@@ -55,7 +55,7 @@ func (w *Webhook) Post(r *http.Request, request *rpc.GuestRequest, response *rpc
 		}
 	}
 	payload := Payload{
-		Text:  fmt.Sprintf("%s called on %s", action, request.Guest.Id),
+		Text:  fmt.Sprintf("%s called on %s", action, request.Guest.ID),
 		Emoji: fmt.Sprintf(":%s:", emoji),
 		Name:  username,
 	}
@@ -67,7 +67,7 @@ func (w *Webhook) Post(r *http.Request, request *rpc.GuestRequest, response *rpc
 
 	ct := "application/json"
 	log.WithFields(log.Fields{
-		"guest":        request.Guest.Id,
+		"guest":        request.Guest.ID,
 		"content_type": ct,
 		"endpoint":     w.Endpoint,
 		"body":         string(data),
@@ -78,7 +78,7 @@ func (w *Webhook) Post(r *http.Request, request *rpc.GuestRequest, response *rpc
 		return err
 	}
 
-	resp.Body.Close()
+	logx.LogReturnedErr(resp.Body.Close, nil, "failed to close response body")
 
 	*response = rpc.GuestResponse{
 		Guest: request.Guest,

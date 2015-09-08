@@ -38,7 +38,7 @@ func (ctx *Context) PersistGuest(g *client.Guest) error {
 		if err != nil {
 			return err
 		}
-		return b.Put(g.Id, data)
+		return b.Put(g.ID, data)
 	})
 }
 
@@ -49,13 +49,13 @@ func (ctx *Context) DeleteGuest(g *client.Guest) error {
 		if err != nil {
 			return err
 		}
-		return b.Delete(g.Id)
+		return b.Delete(g.ID)
 	})
 
 	if err != nil {
 		return err
 	}
-	ctx.DeleteGuestRunner(g.Id)
+	ctx.DeleteGuestRunner(g.ID)
 	return nil
 }
 
@@ -111,13 +111,13 @@ func createGuest(w http.ResponseWriter, r *http.Request) {
 		hr.JSONError(http.StatusBadRequest, err)
 		return
 	}
-	if g.Id != "" {
-		if uuid.Parse(g.Id) == nil {
+	if g.ID != "" {
+		if uuid.Parse(g.ID) == nil {
 			hr.JSONError(http.StatusBadRequest, fmt.Errorf("id must be uuid"))
 			return
 		}
 	} else {
-		g.Id = uuid.New()
+		g.ID = uuid.New()
 	}
 
 	// TODO: make sure it's actually unique
@@ -136,7 +136,7 @@ func createGuest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	runner := ctx.NewGuestRunner(g.Id, 100, 5)
+	runner := ctx.NewGuestRunner(g.ID, 100, 5)
 
 	response := &rpc.GuestResponse{}
 	request := &rpc.GuestRequest{
@@ -260,7 +260,7 @@ func guestRunnerMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := getContext(r)
 		guest := getRequestGuest(r)
-		runner, err := ctx.GetGuestRunner(guest.Id)
+		runner, err := ctx.GetGuestRunner(guest.ID)
 		if err != nil {
 			hr := &HTTPResponse{w}
 			hr.JSONError(http.StatusInternalServerError, err)
@@ -319,7 +319,7 @@ func generateGuestAction(actionName string) http.HandlerFunc {
 			if actionName == prefixedActionName(g.Type, "delete") {
 				if err := ctx.DeleteGuest(g); err != nil {
 					log.WithFields(log.Fields{
-						"guest": g.Id,
+						"guest": g.ID,
 						"error": err,
 						"func":  "agent.Context.DeleteGuest",
 					}).Error("Delete Error:", err)

@@ -2,8 +2,8 @@
 
 [![agent](https://godoc.org/github.com/mistifyio/mistify-agent?status.png)](https://godoc.org/github.com/mistifyio/mistify-agent)
 
-Mistify Agent is the core agent for managing a hypervisor. It runs local on the
-hypervisor and exposes an HTTP API for managing virtual machines.
+Package agent is the core Mistify Agent for managing a hypervisor. It runs local
+on the hypervisor and exposes an HTTP API for managing virtual machines.
 
 
 ### General Architecture
@@ -248,7 +248,7 @@ NewContext creates a new context. In general, there should only be one.
 #### func (*Context) CreateJobLog
 
 ```go
-func (context *Context) CreateJobLog() error
+func (ctx *Context) CreateJobLog() error
 ```
 CreateJobLog creates a new job log
 
@@ -297,7 +297,7 @@ GetGuestRunner retrieves a GuestRunner
 #### func (*Context) GetJobLog
 
 ```go
-func (context *Context) GetJobLog() (*JobLog, error)
+func (ctx *Context) GetJobLog() (*JobLog, error)
 ```
 GetJobLog retrieves a job log
 
