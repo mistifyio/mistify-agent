@@ -3,8 +3,8 @@ package agent
 import (
 	"net/http"
 
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/mistifyio/mistify-agent/config"
+	"github.com/pborman/uuid"
 )
 
 type (
