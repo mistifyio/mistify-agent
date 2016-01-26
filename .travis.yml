@@ -1,0 +1,26 @@
+language: go
+dist: trusty
+
+go:
+  - 1.5
+  - 1.6
+  - tip
+
+before_install:
+  - go get github.com/alecthomas/gometalinter
+  - gometalinter --install --update
+
+install:
+  - go get -t -v ./...
+
+script:
+  - gometalinter --disable-all --enable={errcheck,gofmt,goimports,golint,vet,vetshadow} --deadline=30s --exclude='http.go:196.*(vetshadow)' ./...
+  - go test -v ./...
+
+after_success:
+  - gometalinter --disable={errcheck,gofmt,golint,vet,vetshadow} --deadline=30s ./...
+
+notifications:
+  email: false
+  slack:
+    secure: "KB+qz5z0/EolJTngKuIQ5mqtwKBqgLNpVX35DjkaTVc0TFYFZdwg94XWgTrjYNs6vuCuo8R8cCEOkotBiD7EUYd3/iXQmGnbQ45g/V4oRo1FD+FBQfflWM1IROJejhvQ6q+xDx04lD3UvrkFFw45kK5oAF6SUCoICW/C+a/vn4k="
