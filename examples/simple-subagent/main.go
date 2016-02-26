@@ -63,7 +63,7 @@ func main() {
 		}).Fatal(err)
 	}
 
-	if err := server.RegisterService(&s); err != nil {
+	if err = server.RegisterService(&s); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 			"func":  "rpc.Server.RegisterService",

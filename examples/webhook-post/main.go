@@ -120,7 +120,7 @@ func main() {
 			Timeout: time.Second * 5,
 		},
 	}
-	if err := s.RegisterService(w); err != nil {
+	if err = s.RegisterService(w); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 			"func":  "rpc.Server.RegisterService",

@@ -337,7 +337,7 @@ func main() {
 	}
 
 	test := &Test{}
-	if err := s.RegisterService(test); err != nil {
+	if err = s.RegisterService(test); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 			"func":  "rpc.Server.RegisterService",
