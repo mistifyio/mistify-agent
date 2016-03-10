@@ -84,7 +84,7 @@ func (t *Test) CPUMetrics(r *http.Request, request *rpc.GuestMetricsRequest, res
 		Guest: request.Guest,
 		Type:  "cpu",
 		CPU: []*client.GuestCPUMetrics{
-			&client.GuestCPUMetrics{},
+			{},
 		},
 	}
 	return nil
@@ -96,7 +96,7 @@ func (t *Test) DiskMetrics(r *http.Request, request *rpc.GuestMetricsRequest, re
 		Guest: request.Guest,
 		Type:  "disk",
 		Disk: map[string]*client.GuestDiskMetrics{
-			"vda": &client.GuestDiskMetrics{
+			"vda": {
 				Disk: "vda",
 			},
 		},
@@ -110,7 +110,7 @@ func (t *Test) NicMetrics(r *http.Request, request *rpc.GuestMetricsRequest, res
 		Guest: request.Guest,
 		Type:  "disk",
 		Nic: map[string]*client.GuestNicMetrics{
-			"net0": &client.GuestNicMetrics{
+			"net0": {
 				Name: "net0",
 			},
 		},
@@ -122,7 +122,7 @@ func (t *Test) NicMetrics(r *http.Request, request *rpc.GuestMetricsRequest, res
 func (t *Test) ListImages(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
-			&rpc.Image{
+			{
 				ID:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
@@ -138,7 +138,7 @@ func (t *Test) ListImages(r *http.Request, request *rpc.ImageRequest, response *
 func (t *Test) GetImage(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
-			&rpc.Image{
+			{
 				ID:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
@@ -154,7 +154,7 @@ func (t *Test) GetImage(r *http.Request, request *rpc.ImageRequest, response *rp
 func (t *Test) DeleteImage(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
-			&rpc.Image{
+			{
 				ID:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
@@ -170,7 +170,7 @@ func (t *Test) DeleteImage(r *http.Request, request *rpc.ImageRequest, response 
 func (t *Test) RequestImage(r *http.Request, request *rpc.ImageRequest, response *rpc.ImageResponse) error {
 	*response = rpc.ImageResponse{
 		Images: []*rpc.Image{
-			&rpc.Image{
+			{
 				ID:       "289120e4-ed12-431d-8d18-48f8a94bb05a",
 				Volume:   "",
 				Snapshot: "",
@@ -186,7 +186,7 @@ func (t *Test) RequestImage(r *http.Request, request *rpc.ImageRequest, response
 func (t *Test) ListSnapshots(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
-			&rpc.Snapshot{
+			{
 				ID:   fmt.Sprintf("%s@%s", filepath.Join("mistify", request.ID), "bar"),
 				Size: 1024,
 			},
@@ -199,7 +199,7 @@ func (t *Test) ListSnapshots(r *http.Request, request *rpc.SnapshotRequest, resp
 func (t *Test) GetSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
-			&rpc.Snapshot{
+			{
 				ID:   filepath.Join("mistify", request.ID),
 				Size: 1024,
 			},
@@ -212,7 +212,7 @@ func (t *Test) GetSnapshot(r *http.Request, request *rpc.SnapshotRequest, respon
 func (t *Test) CreateSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
-			&rpc.Snapshot{
+			{
 				ID:   fmt.Sprintf("%s@%s", filepath.Join("mistify", request.ID), request.Dest),
 				Size: 1024,
 			},
@@ -225,7 +225,7 @@ func (t *Test) CreateSnapshot(r *http.Request, request *rpc.SnapshotRequest, res
 func (t *Test) DeleteSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
-			&rpc.Snapshot{
+			{
 				ID:   filepath.Join("mistify", request.ID),
 				Size: 1024,
 			},
@@ -238,7 +238,7 @@ func (t *Test) DeleteSnapshot(r *http.Request, request *rpc.SnapshotRequest, res
 func (t *Test) RollbackSnapshot(r *http.Request, request *rpc.SnapshotRequest, response *rpc.SnapshotResponse) error {
 	*response = rpc.SnapshotResponse{
 		Snapshots: []*rpc.Snapshot{
-			&rpc.Snapshot{
+			{
 				ID:   filepath.Join("mistify", request.ID),
 				Size: 1024,
 			},
@@ -337,7 +337,7 @@ func main() {
 	}
 
 	test := &Test{}
-	if err := s.RegisterService(test); err != nil {
+	if err = s.RegisterService(test); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 			"func":  "rpc.Server.RegisterService",

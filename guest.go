@@ -131,7 +131,7 @@ func createGuest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := ctx.PersistGuest(g); err != nil {
+	if err = ctx.PersistGuest(g); err != nil {
 		hr.JSONError(http.StatusInternalServerError, err)
 		return
 	}
@@ -280,7 +280,7 @@ func generateGuestAction(actionName string) http.HandlerFunc {
 		g := getRequestGuest(r)
 		runner := getRequestRunner(r)
 
-		actionName := prefixedActionName(g.Type, actionName)
+		actionName = prefixedActionName(g.Type, actionName)
 		action, err := ctx.GetAction(actionName)
 		if err != nil {
 			hr.JSONError(http.StatusNotFound, err)

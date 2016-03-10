@@ -189,12 +189,12 @@ func (pq *PipelineQueue) Process() {
 					LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
 				}
 				if err := pipeline.Run(); err != nil {
-					if err := pq.Context.JobLog.UpdateJob(pipeline.ID, pipeline.Action, Errored, err.Error()); err != nil {
+					if err = pq.Context.JobLog.UpdateJob(pipeline.ID, pipeline.Action, Errored, err.Error()); err != nil {
 						LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
 					}
 					LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
 				} else {
-					if err := pq.Context.JobLog.UpdateJob(pipeline.ID, pipeline.Action, Complete, ""); err != nil {
+					if err = pq.Context.JobLog.UpdateJob(pipeline.ID, pipeline.Action, Complete, ""); err != nil {
 						LogRunnerError(pq.GuestID, pq.Name, pipeline.ID, err.Error())
 					}
 					LogRunnerInfo(pq.GuestID, pq.Name, pipeline.ID, "Success")

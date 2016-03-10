@@ -45,7 +45,7 @@ func (c *Client) Do(method string, request interface{}, response interface{}) er
 
 	if resp.StatusCode >= http.StatusBadRequest {
 		var buf bytes.Buffer
-		if _, err := buf.ReadFrom(resp.Body); err != nil {
+		if _, err = buf.ReadFrom(resp.Body); err != nil {
 			return err
 		}
 		return errors.New(buf.String())
@@ -74,7 +74,7 @@ func (c *Client) DoRaw(request interface{}, rw http.ResponseWriter) {
 
 	if resp.StatusCode != http.StatusOK {
 		buf := new(bytes.Buffer)
-		if _, err := buf.ReadFrom(resp.Body); err != nil {
+		if _, err = buf.ReadFrom(resp.Body); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
